@@ -1,0 +1,6 @@
+interface:
+  display_name: Extended fixture
+  short_description: Exercises optional Codex metadata
+  default_prompt: Use the extended fixture.
+policy:
+  allow_implicit_invocation: false

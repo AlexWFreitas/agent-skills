@@ -1,0 +1,34 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: ${{ matrix.shell }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        shell:
+          - pwsh
+          - powershell
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Validate repository and skills
+        shell: ${{ matrix.shell }}
+        run: ./scripts/Test-Repository.ps1
+
+      - name: Run dependency-free tests
+        shell: ${{ matrix.shell }}
+        run: ./tests/Run-Tests.ps1

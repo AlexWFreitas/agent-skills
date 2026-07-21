@@ -1,0 +1,13 @@
+# The source catalog must not contain repository-scoped installed copies.
+/.agents/
+
+# Repository-local test and transaction artifacts, if a failed run leaves them behind.
+/TestResults/
+/.__agent-skills-stage-*/
+/.__agent-skills-backup-*/
+
+# Common editor and operating-system noise.
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
