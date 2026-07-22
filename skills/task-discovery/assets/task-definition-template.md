@@ -38,7 +38,9 @@ directly constrain work.>
 3. **<Outcome-led phase>** — <work and result.>
 
 <Place a constraint, dependency, decision, or risk here only when it changes a
-phase or a verification activity.>
+phase or a verification activity. Keep a settled choice when omitting it would
+let a fresh implementer reasonably choose another option while believing they
+still complied.>
 
 ## Verification and definition of done
 

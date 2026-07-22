@@ -85,7 +85,10 @@ unless they directly constrain the work.
 Rewrite this document at material decision points and before handoff. Apply a
 materiality review: remove or move to the record any optional paragraph, row,
 or section whose removal would not change implementation, a boundary, or
-verification. Do not use an arbitrary line or section-count limit.
+verification. A settled choice is material when omitting it would let a fresh,
+competent implementer reasonably choose another option while believing they
+still complied; keep that choice beside the scope, execution step, or check it
+constrains. Do not use an arbitrary line or section-count limit.
 
 ### Discovery record: the lossless supporting artifact
 

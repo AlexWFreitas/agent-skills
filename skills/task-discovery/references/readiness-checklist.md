@@ -20,6 +20,9 @@ Explain any non-obvious `not-applicable` result.
   discovery work unless that fact directly constrains implementation.
 - Every optional item passes the materiality review: removing it would change
   implementation, a boundary, or verification.
+- Every settled choice that leaves a reasonable implementation alternative open
+  is retained beside the scope, execution step, or verification check it
+  constrains.
 - It is current synthesis: stale or exploratory interim prose has been removed.
 
 ## Supporting record and evidence
