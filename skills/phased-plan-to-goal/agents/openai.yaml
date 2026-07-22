@@ -1,0 +1,7 @@
+interface:
+  display_name: "Phased Plan to Goal"
+  short_description: "Plan, approve, and execute work to a verified goal"
+  default_prompt: "Use $phased-plan-to-goal with this task material to create a phased plan and drive approved execution to the verified goal: [path or task material]."
+
+policy:
+  allow_implicit_invocation: false
