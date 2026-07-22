@@ -1,0 +1,7 @@
+interface:
+  display_name: "Start Coop Session"
+  short_description: "Work through complex tasks together"
+  default_prompt: "Use $start-coop-session to work through this task with me step by step: [describe the task and provide sources]."
+
+policy:
+  allow_implicit_invocation: false
