@@ -1,120 +1,50 @@
 # Task Definition: <Task title>
 
-## Document metadata
+Status: `in-progress` · Task: `<task-name>` · Last updated:
+`<ISO-8601 timestamp with UTC offset>` · Supporting record:
+`discovery-record.md`
 
-- Status: `in-progress`
-- Task name: `<task-name>`
-- Version: `working`
-- Created: `<ISO-8601 timestamp with UTC offset>`
-- Last updated: `<ISO-8601 timestamp with UTC offset>`
-- Discovery record: `discovery-record.md`
+## Objective
 
-## Task statement
+<State the outcome, why it matters, and what success enables. Do not recount
+the discovery conversation.>
 
-<Define the task in one unambiguous sentence.>
+## Implementation context
 
-## Objective and desired outcomes
+<Include only facts a fresh implementer needs to begin correctly: current
+behavior, affected systems or files, material evidence, and decisions that
+directly constrain work.>
 
-<State why the task exists and what observable outcomes it must produce.>
+## Scope and non-goals
 
-## Background and current state
+**In scope**
 
-<Include only context required by a fresh executing agent. Label material claims by evidence class where needed.>
+- <Bounded change or outcome.>
 
-## Stakeholders and affected users
+**Not in scope**
 
-<Identify relevant people, groups, systems, or `Omit this section if not applicable`.>
-
-## Scope
-
-### In scope
-
-- <included responsibility or result>
-
-### Out of scope
-
-- <explicit exclusion or boundary>
+- <Boundary that prevents a likely misunderstanding.>
 
 ## Deliverables
 
-| Deliverable | Required content or form | Completion evidence |
-| --- | --- | --- |
-| <deliverable> | <requirements> | <observable proof> |
+| Deliverable | Required outcome |
+| --- | --- |
+| <artifact or change> | <essential result> |
 
-## Requirements
+## Execution plan
 
-### Required behavior or qualities
+1. **<Outcome-led phase>** — <work and result.>
+2. **<Outcome-led phase>** — <work and result.>
+3. **<Outcome-led phase>** — <work and result.>
 
-- <requirement and evidence class if material>
+<Place a constraint, dependency, decision, or risk here only when it changes a
+phase or a verification activity.>
 
-### Constraints and preferences
+## Verification and definition of done
 
-- <constraint, permission boundary, prohibition, or preference>
+| Check | Evidence of completion |
+| --- | --- |
+| <behavior or boundary> | <test, observation, or review evidence> |
 
-## Assumptions, dependencies, and managed unknowns
-
-### Accepted assumptions
-
-- <assumption, rationale, and validation point>
-
-### Dependencies and prerequisites
-
-- <dependency, owner/source, and required state>
-
-### Managed unknowns
-
-| Unknown | Impact | Resolver | Resolution step | Contingency or gate |
-| --- | --- | --- | --- | --- |
-| <item or `None`> | <impact> | <person/source/event> | <action> | <safe handling> |
-
-## Risks, edge cases, and mitigations
-
-| Risk or edge case | Impact | Likelihood or trigger | Mitigation or decision rule |
-| --- | --- | --- | --- |
-| <item> | <impact> | <condition> | <handling> |
-
-## Recommended execution approach
-
-### Phase 1 - <name>
-
-- Purpose: <phase outcome>
-- Inputs and prerequisites: <required state>
-- Work: <bounded activities>
-- Outputs: <artifacts or decisions>
-- Validation: <checks>
-- Exit gate: <conditions before the next phase>
-
-### Sequencing and decision points
-
-<Describe dependencies between phases, safe opportunities for parallel work, approval gates, and stop conditions.>
-
-## Validation strategy
-
-| Outcome or requirement | Validation method | Expected evidence | Failure handling |
-| --- | --- | --- | --- |
-| <item> | <test, review, observation, or analysis> | <proof> | <response> |
-
-## Acceptance criteria
-
-- [ ] <Observable, task-domain-appropriate criterion>
-
-## Definition of done
-
-- <All deliverables complete, validation passed, required approvals obtained, and residual conditions documented.>
-
-## Evidence and traceability
-
-| Claim or decision | Evidence class | Source | Freshness or limitation |
-| --- | --- | --- | --- |
-| <material item> | <verified/inference/assumption/unresolved> | <path, URL, artifact, or user decision> | <notes> |
-
-## Execution boundaries and handoff notes
-
-<State permitted actions, prohibited actions, approval requirements, and information the executing agent must preserve.>
-
-## Revision history
-
-| Version | Time | Status | Summary |
-| --- | --- | --- | --- |
-| `working` | <timestamp> | `in-progress` | Initial evolving definition |
-
+The task is complete when the deliverables exist, the checks pass, and the
+stated non-goals have not been absorbed into implementation.

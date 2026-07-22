@@ -1,153 +1,138 @@
 ---
 name: task-discovery
-description: Run an explicit, read-only task-discovery phase that investigates a proposed task, interviews the user one question at a time, challenges ambiguity, and maintains a discovery record plus a self-contained task definition with an execution approach and validation criteria. Use only when the user explicitly invokes `$task-discovery` or names `task-discovery`; never trigger implicitly. Apply to any task domain before execution.
+description: Run an explicit, read-only discovery phase that challenges a proposed task and produces a concise implementation handoff plus a lossless supporting record. Use only when the user explicitly invokes `$task-discovery` or names `task-discovery`; never trigger implicitly.
 ---
 
 # Task Discovery
 
-## Establish the phase contract
+Treat discovery as a bounded phase: investigate and challenge the task first,
+then hand off a clear implementation brief. Do not execute the defined task.
 
-Treat discovery as a bounded phase with a clear start and end. Define the task comprehensively; do not settle for a merely plausible or "good enough" description.
+## Phase contract
 
-Follow these non-negotiable rules:
+- Ask exactly one discovery question per assistant turn. Wait for the answer
+  before selecting the next question.
+- Research proactively in read-only mode. Ask the user only for intent,
+  authority, preferences, or facts unavailable from safe inspection.
+- Challenge vague claims, contradictions, risky assumptions, and premature
+  conclusions. Do not make the final handoff a transcript of that exploration.
+- Write only inside `docs/discovery/<task-name>/` during discovery. Treat
+  project files and external systems as read-only.
+- Maintain `discovery-record.md` and `task-definition.md` from the beginning.
+- Write in the request language. Preserve technical identifiers and proper names
+  when translation would make them inaccurate.
+- Do not execute, install, commit, push, publish, or otherwise perform the
+  defined task. End discovery and wait for further instructions.
 
-- Ask exactly one discovery question per assistant turn. Wait for the answer before selecting the next question.
-- Adapt depth to the task. Use no fixed question count or artificial maximum.
-- Research proactively in read-only mode before and between questions.
-- Challenge vague claims, contradictions, risky assumptions, and premature conclusions.
-- Write only inside `docs/discovery/<task-name>/` during the phase. Treat project files and external systems as read-only.
-- Maintain `discovery-record.md` and `task-definition.md` from the beginning of the phase.
-- Write the documents in the language of the user's request. Preserve technical identifiers and proper names when translation would make them inaccurate.
-- Do not execute the defined task. End discovery, present the documents, and wait for further instructions.
+## Start or resume
 
-## Start or resume discovery
+1. Infer a concise lowercase kebab-case name, propose it, and obtain
+   confirmation before creating files.
+2. Use `docs/discovery/<task-name>/` by default. If it already exists, ask
+   whether to resume it or create a distinct directory.
+3. Create the two primary documents from the bundled templates. Set
+   `in-progress` status and ISO 8601 timestamps with a UTC offset.
+4. Put substantial research, extracts, diagrams, and examples in supporting
+   files within the same discovery directory, then link them from the record.
+5. On resume, read the current state, canonical trail, task definition, and the
+   newest snapshot before asking the next highest-impact question. Record the
+   resumed session as a trail event.
 
-1. Infer a concise lowercase kebab-case task name from the request.
-2. Propose that name and obtain confirmation before creating files.
-3. Use `docs/discovery/<task-name>/` relative to the current workspace by default.
-4. If that directory already exists, ask whether to resume it or create a distinct directory. Do not choose silently.
-5. Create or adapt the two primary documents immediately from:
-   - `assets/discovery-record-template.md`
-   - `assets/task-definition-template.md`
-6. Set status to `in-progress` and record ISO 8601 timestamps with a UTC offset.
-7. Permit supporting notes, extracts, diagrams, or evidence files only within the same discovery directory. Link them from one of the primary documents.
-8. Mark the start of a new session in the continuous discovery record.
+## Discovery loop
 
-When resuming, read the full discovery record, the canonical task definition, and the latest file under `versions/` before asking a question. Record the resumed session and carry forward the highest-priority unresolved point.
+Repeat until the readiness gate passes:
 
-## Investigate before asking
+1. Reconcile the task definition with the newest answer and research.
+2. Identify one material unresolved point. An issue is material when it could
+   change the outcome, scope, approach, permission, cost, risk, validation, or
+   definition of done.
+3. Explain briefly why it matters and give a recommendation when evidence
+   supports one. Keep recommendations distinct from verified facts.
+4. Ask one focused question about that point, then wait.
+5. Update both primary documents immediately. Add the complete event to the
+   record's canonical trail; rewrite the task definition as current synthesis.
 
-Inspect all relevant sources that are safely available in read-only mode. Depending on the task, inspect workspace instructions, source files, documentation, configuration, logs, history, supplied artifacts, connected sources, and current external references. Browse or search when current or niche facts matter and access is available.
+Investigate applicable intent, outcomes, current state, stakeholders, scope,
+deliverables, requirements, constraints, dependencies, risks, sequencing,
+validation, and completion. Omit a dimension only when it does not materially
+affect execution or verification.
 
-Honor source and environment restrictions stated by the user or workspace instructions. Never use external research when the task explicitly limits evidence to local or supplied sources.
+For every material researched claim, preserve its source, supported claim,
+evidence class (`verified`, `inference`, `assumption`, or `unresolved`), and
+any relevant freshness, conflict, or access limitation. Do not copy secrets or
+unnecessary sensitive content.
 
-Before asking the user for a fact, determine whether it can be established through read-only inspection. Ask the user for intent, priorities, preferences, authority, or unavailable facts; do not make the user rediscover information already present in accessible sources.
+## Artifact contracts
 
-For every material researched claim, record:
+### Task definition: the primary handoff
 
-- the file path, URL, artifact, or source identifier;
-- the access or observation time when freshness matters;
-- the claim the source supports;
-- one evidence class: `verified`, `inference`, `assumption`, or `unresolved`;
-- any limitation, conflict, or freshness concern.
+Keep `task-definition.md` self-contained for a fresh implementer. Use these six
+sections in this order:
 
-Avoid copying secrets or unnecessary sensitive content into discovery artifacts.
+1. Objective
+2. Implementation context
+3. Scope and non-goals
+4. Deliverables
+5. Execution plan
+6. Verification and definition of done
 
-## Run the one-question discovery loop
+Put constraints beside the execution step or verification check they affect.
+Add risks, dependencies, decisions, traceability, or other detail only when it
+materially changes implementation, a boundary, or verification. Never include
+discovery questions, rejected alternatives, or settled decisions as scope
+unless they directly constrain the work.
 
-Repeat this loop until the readiness gate passes:
+Rewrite this document at material decision points and before handoff. Apply a
+materiality review: remove or move to the record any optional paragraph, row,
+or section whose removal would not change implementation, a boundary, or
+verification. Do not use an arbitrary line or section-count limit.
 
-1. Reconcile the current task definition with the latest answer and research.
-2. Identify the single highest-impact unresolved point.
-3. Explain briefly why that point matters.
-4. Offer a recommendation when evidence supports one, distinguishing it from a verified fact.
-5. Ask one focused question about one decision or information gap. Do not hide multiple questions in bullets, clauses, or subparts.
-6. Wait for the user's answer.
-7. Research follow-up facts in read-only mode when useful.
-8. Update both primary documents immediately and refresh their `last updated` timestamps.
+### Discovery record: the lossless supporting artifact
 
-Explore all applicable dimensions, including intent, desired outcomes, present state, stakeholders, scope and exclusions, deliverables, requirements, quality attributes, constraints, preferences, dependencies, assumptions, risks, edge cases, permissions, sequencing, validation, acceptance criteria, and definition of done. Omit dimensions that genuinely do not apply.
+Keep `discovery-record.md` in three layers:
 
-Treat contradictions and ambiguous terms as unresolved until reconciled. Revisit earlier answers when new evidence changes their meaning. If the user cannot know an answer, investigate it or turn it into a managed unknown with a concrete resolution plan.
+1. A short current-state summary with status, settled understanding, next
+   unresolved point, and links.
+2. One continuous canonical chronological trail. Record each material question
+   or event once with its reason, recommendation, answer or evidence, and
+   resulting decision or definition impact.
+3. Linked research notes for substantial source detail.
 
-## Maintain the discovery record
+Compaction is lossless: do not delete a question, answer, evidence item,
+rationale, or managed unknown. Improve navigation by keeping it once in the
+canonical trail or linked note rather than repeating it in separate ledgers.
 
-Keep `discovery-record.md` as a polished chronological record rather than a raw transcript. Preserve the exact meaning of the user's statements. Explicitly note every reinterpretation, normalization, or material wording change.
+### Examples
 
-Record, when applicable:
+Read `references/task-definition-example.md` when a concrete presentation model
+will help calibrate the output. It is illustrative, not a template. Use its
+small negative fragment only when it clarifies a real boundary; do not create a
+second full negative document.
 
-- the initial request as a polished reconstruction;
-- inspected and researched sources;
-- each question, why it mattered, any recommendation, and the answer;
-- changes in understanding and their causes;
-- assumptions challenged or accepted;
-- contradictions and their resolution;
-- decisions and rationale;
-- discarded alternatives;
-- unresolved or managed unknowns;
-- readiness reviews, pauses, closures, and reopenings.
+## Readiness, closure, and reopening
 
-Keep one continuous record. Add a clearly separated session section whenever discovery resumes or reopens.
+Before closure, apply `references/readiness-checklist.md`. Use the review to
+judge coherence, materiality, and document roles; do not try to mechanically
+lint semantic quality by length or heading count.
 
-## Maintain the task definition
+Continue discovery while a material uncertainty, contradiction, unverified
+dependency, missing acceptance criterion, unclear boundary, or unmanaged risk
+remains. An unavoidable external unknown may remain only when its impact,
+resolver, resolution step, and safe contingency or gate are recorded.
 
-Keep `task-definition.md` as the canonical, current, self-contained definition. Make it sufficient for a fresh agent with no access to the conversation or discovery record.
+When ready:
 
-Include only applicable sections. Cover as needed:
+1. Set both primary documents to `ready-for-handoff`.
+2. Record the readiness review and closure in the canonical trail.
+3. Create `versions/` if absent and save the definition as the next zero-padded
+   snapshot, such as `versions/task-definition-v001.md`.
+4. Present concise links to the task definition, discovery record, supporting
+   research, and snapshot. State that discovery has ended and wait.
 
-- objective, background, current state, and desired outcomes;
-- stakeholders or affected users;
-- scope and out of scope;
-- deliverables and requirements;
-- constraints, preferences, assumptions, and dependencies;
-- risks, edge cases, mitigations, and managed unknowns;
-- recommended execution phases, sequencing, and decision points;
-- validation strategy and observable acceptance criteria;
-- definition of done;
-- evidence sources and traceability;
-- boundaries on permitted actions and handoff notes.
+For an early user-requested closure, run the review, explain material gaps, ask
+one confirmation question, then mark both documents `incomplete` if confirmed.
 
-Label material statements as verified facts, inferences, assumptions, or unresolved facts when the distinction affects execution. Resolve disagreement between the two documents in favor of the latest evidenced decision, then update both documents so they agree.
-
-## Apply the readiness gate
-
-Read and apply `references/readiness-checklist.md` before ending the phase. Record the review in `discovery-record.md`.
-
-Continue discovery whenever an applicable material uncertainty, contradiction, unverified dependency, missing acceptance criterion, unclear boundary, or unmanaged execution risk remains. Treat an issue as material when its answer could change the outcome, scope, approach, permission boundary, cost, risk, validation, or definition of done.
-
-Allow an unavoidable external unknown at handoff only when the documents state:
-
-- what is unknown and why it cannot currently be resolved;
-- its impact;
-- who or what can resolve it;
-- the concrete resolution or validation step;
-- the contingency, decision rule, or gate that prevents unsafe guessing.
-
-Decide when the readiness gate passes; do not require a fixed question count or a ceremonial user approval.
-
-## Pause, close, and reopen
-
-When the user pauses discovery:
-
-1. Set status to `paused`.
-2. Record the current understanding, unresolved items, and the next recommended question.
-3. Update timestamps and stop without executing the task.
-
-When the readiness gate passes:
-
-1. Set both documents to `ready-for-handoff`.
-2. Complete the readiness and closure entries.
-3. Create `versions/` if absent.
-4. Save the canonical definition as the next zero-padded snapshot, such as `versions/task-definition-v001.md`.
-5. Present a concise completion summary and links to the two primary documents and snapshot.
-6. State that discovery has ended and stop. Wait for further instructions.
-
-When the user requests an early end before readiness passes:
-
-1. Run the readiness review.
-2. Explain the material gaps.
-3. Ask one focused confirmation question about closing despite those gaps.
-4. If confirmed, set status to `incomplete`, record the risks and reason for early closure, save the next versioned snapshot, and stop without executing the task.
-
-When a later explicit invocation materially changes a completed definition, reopen the same discovery directory unless the user directs otherwise. Preserve existing snapshots, append a new session to the discovery record, set the canonical documents back to `in-progress`, and save the next snapshot only when that session closes.
-
+For a later explicit invocation that materially changes a completed definition,
+reopen the same directory, preserve snapshots, add a resumed-session trail
+event, set both documents to `in-progress`, and snapshot only when that session
+closes.

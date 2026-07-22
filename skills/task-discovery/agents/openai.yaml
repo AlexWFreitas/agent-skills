@@ -1,8 +1,7 @@
 interface:
   display_name: "Task Discovery"
-  short_description: "Thoroughly define tasks before execution"
-  default_prompt: "Use $task-discovery to investigate and define this task before any execution: [describe the task]."
+  short_description: "Challenge tasks and produce clear implementation handoffs"
+  default_prompt: "Use $task-discovery to investigate this task, challenge assumptions, and produce a concise implementation handoff before execution: [describe the task]."
 
 policy:
   allow_implicit_invocation: false
-
