@@ -1,6 +1,6 @@
 ---
 name: task-discovery
-description: Run an explicit, read-only discovery phase that challenges a proposed task and produces a concise implementation handoff plus a lossless supporting record. Use only when the user explicitly invokes `$task-discovery` or names `task-discovery`; never trigger implicitly.
+description: Run an explicit, read-only discovery phase that challenges a proposed task and produces a coherent, implementation-ready task definition plus a lossless supporting record. Use only when the user explicitly invokes `$task-discovery` or names `task-discovery`; never trigger implicitly.
 ---
 
 # Task Discovery
@@ -42,15 +42,19 @@ then hand off a clear implementation brief. Do not execute the defined task.
 
 Repeat until the readiness gate passes:
 
-1. Reconcile the task definition with the newest answer and research.
-2. Identify one material unresolved point. An issue is material when it could
+1. Preserve each material answer, research result, contradiction, and decision
+   in the canonical trail before it could be lost. Do not append raw events to
+   the task definition.
+2. Reconcile the reader-facing documents when useful for safe continuation.
+   Whenever `task-definition.md` is updated, rewrite it as one coherent current
+   document rather than accumulating patches or question history. Intermediate
+   rewrite frequency is not a quality target.
+3. Identify one material unresolved point. An issue is material when it could
    change the outcome, scope, approach, permission, cost, risk, validation, or
    definition of done.
-3. Explain briefly why it matters and give a recommendation when evidence
+4. Explain briefly why it matters and give a recommendation when evidence
    supports one. Keep recommendations distinct from verified facts.
-4. Ask one focused question about that point, then wait.
-5. Update both primary documents immediately. Add the complete event to the
-   record's canonical trail; rewrite the task definition as current synthesis.
+5. Ask one focused question about that point, then wait.
 
 Investigate applicable intent, outcomes, current state, stakeholders, scope,
 deliverables, requirements, constraints, dependencies, risks, sequencing,
@@ -73,22 +77,43 @@ sections in this order:
 2. Implementation context
 3. Scope and non-goals
 4. Deliverables
-5. Execution plan
+5. Recommended implementation approach
 6. Verification and definition of done
 
-Put constraints beside the execution step or verification check they affect.
-Add risks, dependencies, decisions, traceability, or other detail only when it
-materially changes implementation, a boundary, or verification. Never include
-discovery questions, rejected alternatives, or settled decisions as scope
-unless they directly constrain the work.
+Treat these sections as a stable navigation spine, not a complete fixed schema.
+Add task-specific subsections for sources and authority, requirements and
+invariants, decisions and rationale, risks and managed unknowns, contract
+traceability, or similar dimensions only when omission could change
+implementation, authority, risk, a boundary, or verification. Put a constraint
+or decision beside the work or check it governs rather than collecting detached
+rules.
 
-Rewrite this document at material decision points and before handoff. Apply a
-materiality review: remove or move to the record any optional paragraph, row,
-or section whose removal would not change implementation, a boundary, or
-verification. A settled choice is material when omitting it would let a fresh,
-competent implementer reasonably choose another option while believing they
-still complied; keep that choice beside the scope, execution step, or check it
-constrains. Do not use an arbitrary line or section-count limit.
+Use `Recommended implementation approach` for outcome-level sequencing,
+dependencies, and decision gates a fresh implementer needs. Do not turn it into
+a command-by-command plan, a separate phased implementation plan, or execution
+authorization. Task discovery creates documentation only.
+
+Move substantial architecture, research, migration, risk, test-strategy, or
+other specialist detail into a linked supporting document when that makes the
+primary definition easier to understand. Give each supporting document one
+clear authoritative purpose, summarize its implementation consequence in the
+task definition, and avoid duplicating governing truth across files.
+
+Never include discovery questions, rejected alternatives, chronological
+reasoning, or already-completed discovery work as implementation scope. Include
+only the conclusions and constraints the implementer must preserve.
+
+Before handoff, rebuild this document as a whole from the current governing
+decisions, evidence, and linked authoritative detail. Reconcile it against the
+lossless record so no material requirement, invariant, decision, risk, managed
+unknown, dependency, deliverable, or validation obligation is missing or
+contradictory. Apply a materiality review: remove or move to the record any
+optional paragraph, row, or subsection whose removal would not change
+implementation, authority, risk, a boundary, or verification. A settled choice
+is material when omitting it would let a fresh, competent implementer
+reasonably choose another option while believing they still complied; keep that
+choice beside the scope, approach, or check it constrains. Do not use an
+arbitrary line, section, question, or rewrite-count limit.
 
 ### Discovery record: the lossless supporting artifact
 
@@ -109,14 +134,16 @@ canonical trail or linked note rather than repeating it in separate ledgers.
 
 Read `references/task-definition-example.md` when a concrete presentation model
 will help calibrate the output. It is illustrative, not a template. Use its
-small negative fragment only when it clarifies a real boundary; do not create a
-second full negative document.
+conditional subsections and linked supporting contract only when comparable
+material exists; do not mechanically reproduce its depth or headings.
 
 ## Readiness, closure, and reopening
 
-Before closure, apply `references/readiness-checklist.md`. Use the review to
-judge coherence, materiality, and document roles; do not try to mechanically
-lint semantic quality by length or heading count.
+Before closure, synthesize the complete task definition as one reader-oriented
+whole, then apply `references/readiness-checklist.md`. Use the review to judge
+coherence, completeness, authority, materiality, and document roles; do not try
+to mechanically lint semantic quality by length, heading count, or rewrite
+frequency.
 
 Continue discovery while a material uncertainty, contradiction, unverified
 dependency, missing acceptance criterion, unclear boundary, or unmanaged risk
@@ -125,11 +152,14 @@ resolver, resolution step, and safe contingency or gate are recorded.
 
 When ready:
 
-1. Set both primary documents to `ready-for-handoff`.
-2. Record the readiness review and closure in the canonical trail.
-3. Create `versions/` if absent and save the definition as the next zero-padded
+1. Perform a definition-only cold read: using no chat or discovery record,
+   confirm a fresh agent can explain the task, preserve its governing choices,
+   and reject reasonable but incorrect implementation paths.
+2. Set both primary documents to `ready-for-handoff`.
+3. Record the readiness review and closure in the canonical trail.
+4. Create `versions/` if absent and save the definition as the next zero-padded
    snapshot, such as `versions/task-definition-v001.md`.
-4. Present concise links to the task definition, discovery record, supporting
+5. Present concise links to the task definition, discovery record, supporting
    research, and snapshot. State that discovery has ended and wait.
 
 For an early user-requested closure, run the review, explain material gaps, ask

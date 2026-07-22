@@ -1,7 +1,7 @@
 interface:
   display_name: "Task Discovery"
   short_description: "Challenge tasks and produce clear implementation handoffs"
-  default_prompt: "Use $task-discovery to investigate this task, challenge assumptions, and produce a concise implementation handoff before execution: [describe the task]."
+  default_prompt: "Use $task-discovery to investigate this task, challenge assumptions, and produce a coherent, implementation-ready task definition before execution: [describe the task]."
 
 policy:
   allow_implicit_invocation: false
