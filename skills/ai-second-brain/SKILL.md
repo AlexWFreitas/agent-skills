@@ -1,6 +1,6 @@
 ---
 name: ai-second-brain
-description: Capture, organize, reconcile, and retrieve a user-provided body of knowledge in a local Markdown vault while preserving provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
+description: Capture, interpret, organize, reconcile, and retrieve user-provided text, screenshots, video, and dictated knowledge in a local Markdown vault while preserving provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
 ---
 
 # AI Second Brain
@@ -15,6 +15,8 @@ Read [references/vault-contract.md](references/vault-contract.md) before
 initializing, capturing, reconciling, retrieving, correcting, archiving, or
 deleting. For a game context, also read
 [references/game-playthrough.md](references/game-playthrough.md).
+Before processing or interpreting video, read
+[references/video-processing.md](references/video-processing.md).
 
 The Windows helpers provide optional deterministic mechanics without becoming
 the portable behavioral authority:
@@ -25,6 +27,11 @@ the portable behavioral authority:
   creates immutable evidence and its first append-only processing event.
 - [scripts/Complete-SecondBrainScreenshot.ps1](scripts/Complete-SecondBrainScreenshot.ps1)
   completes a pending screenshot after the user saves it locally;
+- [scripts/Complete-SecondBrainVideo.ps1](scripts/Complete-SecondBrainVideo.ps1)
+  completes a pending video after the user saves it locally;
+- [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
+  uses local FFmpeg and whisper.cpp executables to prepare sampled frames and
+  a timestamped offline speech transcript;
 - [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
   appends later processing state without rewriting evidence.
 
@@ -40,9 +47,10 @@ local file tools. Do not introduce a hosted service or database.
   them.
 - Do not read or merge a sibling context unless the user explicitly requests
   that cross-context operation.
-- Original capture files and completed screenshot attachments are immutable
-  evidence. Store later observations, inferences, corrections, and processing
-  changes separately with capture-ID provenance.
+- Original capture files and completed screenshot or video attachments are
+  immutable evidence. Store later observations, machine transcripts,
+  inferences, corrections, and processing changes separately with capture-ID
+  provenance.
 - Never auto-delete evidence. Permanent deletion requires an explicit request,
   impact preview, confirmation, bounded execution, and reference repair.
 - Do not browse for subject facts or use external knowledge unless the user
@@ -52,7 +60,7 @@ local file tools. Do not introduce a hosted service or database.
 
 Treat an accepted user message as a deliberate capture when it contains or asks
 about evidence, a correction, a decision, a hypothesis, a question, an open
-item, a screenshot, or a dictated transcript. A pure initialization,
+item, a screenshot, a video, or a dictated transcript. A pure initialization,
 context-selection, authorization, archive-confirmation, or deletion-confirmation
 command is control input and is not itself subject evidence.
 
@@ -67,9 +75,9 @@ For every deliberate capture in an initialized vault:
 1. As the first agent action, run
    [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
    against the vault root. Pass the complete accepted text, corrected dictated
-   transcript, or screenshot message/caption without summarizing it.
-2. For a screenshot, pass a local attachment path only when Codex exposes one.
-   Otherwise create the capture without a path so it remains
+   transcript, or screenshot/video message and caption without summarizing it.
+2. For a screenshot or video, pass a local attachment path only when Codex
+   exposes one. Otherwise create the capture without a path so it remains
    `pending-save-first`.
 3. If persistence fails, report the failure immediately. Do not interpret,
    answer, or reorganize that input until durable capture succeeds.
@@ -79,8 +87,7 @@ For every deliberate capture in an initialized vault:
 When retrying after an uncertain result, reuse the reported capture ID. The
 helper returns `existing-capture` instead of duplicating evidence.
 
-If a pending screenshot is later saved locally, run
-[scripts/Complete-SecondBrainScreenshot.ps1](scripts/Complete-SecondBrainScreenshot.ps1)
+If pending media is later saved locally, run the matching completion helper
 with the original capture ID. Do not rewrite its capture Markdown.
 
 ## Start or resume a task
@@ -112,6 +119,18 @@ Use only the active context and the captured evidence.
 - For a screenshot still pending save-first, do not claim visual evidence is
   retained. Ask the user to save the image locally and keep the item blocked or
   pending.
+- For a video with durable media, run
+  [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
+  before interpretation. Do not substitute a hosted transcription service.
+- Interpret the prepared video using the required separate visual, onscreen
+  text, audible speech, non-speech audio, combined timeline, inference, and
+  unresolved layers in
+  [references/video-processing.md](references/video-processing.md). Treat the
+  offline speech transcript as fallible derived evidence, not as the user's
+  direct statement.
+- If a video is pending save-first, or contains audio but the local
+  transcription runtime/model is unavailable, append `blocked` and do not
+  claim complete interpretation.
 - Append an `interpreted`, `blocked`, or `conflicted` event through
   [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1).
 - Do not rewrite the immutable capture or completed attachment.

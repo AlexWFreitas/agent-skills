@@ -1,6 +1,8 @@
 $initializeScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Initialize-SecondBrain.ps1'
 $captureScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainCapture.ps1'
 $completeScreenshotScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Complete-SecondBrainScreenshot.ps1'
+$completeVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Complete-SecondBrainVideo.ps1'
+$processVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Process-SecondBrainVideo.ps1'
 $processingEventScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainProcessingEvent.ps1'
 
 function New-SecondBrainFixture {
@@ -31,6 +33,7 @@ Invoke-Test 'second brain initializer creates the portable context contract' {
         (Join-Path $context 'open-items.md'),
         (Join-Path $context 'inbox\captures'),
         (Join-Path $context 'inbox\interpretations'),
+        (Join-Path $context 'inbox\media-processing'),
         (Join-Path $context 'inbox\processing-events.jsonl'),
         (Join-Path $context 'topics'),
         (Join-Path $context 'attachments'),
@@ -119,6 +122,111 @@ Invoke-Test 'second brain screenshot capture copies local evidence or remains vi
     $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\inbox\processing-events.jsonl')
     $completionEvents = @($ledger | Where-Object { $_ -match [regex]::Escape($pending.CaptureId) })
     Assert-Equal 2 $completionEvents.Count 'Pending screenshot did not retain capture and completion events.'
+}
+
+Invoke-Test 'second brain video capture preserves media and supports save-first completion' {
+    $vault = New-SecondBrainFixture 'second-brain-video-capture'
+    $videoPath = Join-Path $script:TemporaryRoot 'test-video.mp4'
+    [IO.File]::WriteAllBytes($videoPath, [byte[]](0x00, 0x00, 0x00, 0x18))
+
+    $ready = & $captureScript `
+        -VaultPath $vault `
+        -InputType video `
+        -Content 'A short clip with dialogue.' `
+        -UserCaption 'Interpret the visible and audible channels.' `
+        -AttachmentPath $videoPath
+    Assert-Equal 'ready' $ready.AttachmentState 'Local video did not become ready.'
+    Assert-True (Test-Path -LiteralPath $ready.AttachmentPath -PathType Leaf) 'Video attachment was not copied.'
+    Assert-True ((Get-Content -Raw $ready.CapturePath).Contains('input_type: video')) 'Video input type was not preserved.'
+
+    $pending = & $captureScript `
+        -VaultPath $vault `
+        -InputType video `
+        -Content 'Composer-only video.'
+    Assert-Equal 'pending-save-first' $pending.AttachmentState 'Missing local video did not remain pending.'
+
+    $completed = & $completeVideoScript `
+        -VaultPath $vault `
+        -CaptureId $pending.CaptureId `
+        -AttachmentPath $videoPath
+    Assert-Equal 'attachment-ready' $completed.State 'Save-first video was not completed.'
+    Assert-True (Test-Path -LiteralPath $completed.AttachmentPath -PathType Leaf) 'Completed video was not copied.'
+}
+
+Invoke-Test 'second brain video processing prepares frames and an offline speech transcript' {
+    $vault = New-SecondBrainFixture 'second-brain-video-processing'
+    $videoPath = Join-Path $script:TemporaryRoot 'processable-video.mp4'
+    [IO.File]::WriteAllBytes($videoPath, [byte[]](0x00, 0x00, 0x00, 0x18))
+    $capture = & $captureScript `
+        -VaultPath $vault `
+        -InputType video `
+        -Content 'Synthetic video evidence.' `
+        -AttachmentPath $videoPath
+
+    $toolRoot = Join-Path $script:TemporaryRoot 'fake-media-tools'
+    [void](New-Item -ItemType Directory -Path $toolRoot)
+    $ffprobe = Join-Path $toolRoot 'ffprobe.ps1'
+    $ffmpeg = Join-Path $toolRoot 'ffmpeg.ps1'
+    $whisper = Join-Path $toolRoot 'whisper-cli.ps1'
+    $model = Join-Path $toolRoot 'ggml-base.bin'
+
+    Set-Content -LiteralPath $ffprobe -Encoding UTF8 -Value @'
+param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ToolArguments)
+'{"streams":[{"codec_type":"video","codec_name":"h264"},{"codec_type":"audio","codec_name":"aac"}],"format":{"duration":"2.000"}}'
+'@
+    Set-Content -LiteralPath $ffmpeg -Encoding UTF8 -Value @'
+param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ToolArguments)
+$destination = $ToolArguments[$ToolArguments.Count - 1]
+if ($destination -like '*%06d*') {
+    [IO.File]::WriteAllBytes($destination.Replace('%06d', '000001'), [byte[]](1, 2, 3))
+    [IO.File]::WriteAllBytes($destination.Replace('%06d', '000002'), [byte[]](4, 5, 6))
+}
+else {
+    [IO.File]::WriteAllBytes($destination, [byte[]](7, 8, 9))
+}
+'@
+    Set-Content -LiteralPath $whisper -Encoding UTF8 -Value @'
+param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ToolArguments)
+$outputIndex = [Array]::IndexOf($ToolArguments, '-of')
+if ($outputIndex -lt 0) { throw 'Missing -of.' }
+$prefix = $ToolArguments[$outputIndex + 1]
+[IO.File]::WriteAllText("$prefix.json", '{"transcription":[{"timestamps":{"from":"00:00:00,000","to":"00:00:01,000"},"text":"spoken words"}]}')
+[IO.File]::WriteAllText("$prefix.srt", "1`r`n00:00:00,000 --> 00:00:01,000`r`nspoken words`r`n")
+'@
+    [IO.File]::WriteAllBytes($model, [byte[]](10, 11, 12))
+
+    $missingTranscriberFailed = $false
+    try {
+        & $processVideoScript `
+            -VaultPath $vault `
+            -CaptureId $capture.CaptureId `
+            -FfmpegPath $ffmpeg `
+            -FfprobePath $ffprobe `
+            -WhisperPath (Join-Path $toolRoot 'missing-whisper.exe') `
+            -WhisperModelPath $model *> $null
+    }
+    catch { $missingTranscriberFailed = $true }
+    Assert-True $missingTranscriberFailed 'Video with audio did not block when offline transcription was unavailable.'
+
+    $result = & $processVideoScript `
+        -VaultPath $vault `
+        -CaptureId $capture.CaptureId `
+        -FfmpegPath $ffmpeg `
+        -FfprobePath $ffprobe `
+        -WhisperPath $whisper `
+        -WhisperModelPath $model
+
+    Assert-Equal 'media-ready' $result.State 'Video processing did not report ready media.'
+    Assert-Equal 2 $result.FrameCount 'Prepared frame count was not reported.'
+    Assert-Equal 'machine-transcript-ready' $result.TranscriptionState 'Audio was not transcribed offline.'
+    foreach ($name in @('manifest.json', 'ffprobe.json', 'frames.json', 'audio.wav', 'audio-transcript.json', 'audio-transcript.srt')) {
+        Assert-True (Test-Path -LiteralPath (Join-Path $result.ProcessingPath $name) -PathType Leaf) "Missing video derivative '$name'."
+    }
+    $manifest = Get-Content -Raw (Join-Path $result.ProcessingPath 'manifest.json') | ConvertFrom-Json
+    Assert-Equal 'sampled-frames' $manifest.visual_coverage 'Manifest did not disclose sampled visual coverage.'
+    Assert-Equal 1 $manifest.audio_stream_count 'Manifest lost stream metadata.'
+    Assert-True ($manifest.source_attachment -match '^\.\./\.\./\.\./attachments/') 'Manifest source path does not reach the immutable attachment.'
+    Assert-True (Test-Path -LiteralPath $capture.AttachmentPath -PathType Leaf) 'Processing changed the immutable attachment.'
 }
 
 Invoke-Test 'second brain capture retry with an existing capture id does not duplicate evidence' {

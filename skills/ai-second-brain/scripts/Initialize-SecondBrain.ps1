@@ -92,6 +92,7 @@ $directories = @(
     (Join-Path $contextRoot 'inbox'),
     (Join-Path $contextRoot 'inbox\captures'),
     (Join-Path $contextRoot 'inbox\interpretations'),
+    (Join-Path $contextRoot 'inbox\media-processing'),
     (Join-Path $contextRoot 'topics'),
     (Join-Path $contextRoot 'attachments'),
     (Join-Path $contextRoot 'external')

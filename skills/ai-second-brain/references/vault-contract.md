@@ -39,6 +39,8 @@ inbox/
       <capture-id>.md
   interpretations/
     <capture-id>.md
+  media-processing/
+    <capture-id>/
   processing-events.jsonl
 topics/
 attachments/
@@ -52,6 +54,9 @@ external/
   contradictions, and hypotheses.
 - `inbox/captures/` owns immutable original deliberate inputs.
 - `inbox/interpretations/` owns derived observations and inferences.
+- `inbox/media-processing/` owns reproducible video metadata, sampled frames,
+  extracted audio, and machine transcripts. These are derived evidence and do
+  not replace the immutable video attachment.
 - `inbox/processing-events.jsonl` is an append-only event ledger. It does not
   replace capture evidence.
 - `topics/` contains notes created only when accumulated evidence justifies
@@ -94,7 +99,7 @@ Exact deliberate user text or corrected voice transcript.
 Caption supplied with a screenshot, or `None`.
 ```
 
-Allowed input types are `text`, `voice`, and `screenshot`.
+Allowed input types are `text`, `voice`, `screenshot`, and `video`.
 
 For `voice`, the original input is the corrected transcript. Do not retain raw
 microphone audio.
@@ -106,6 +111,13 @@ local source has been copied to `attachments/<capture-id><extension>`. Use
 durable but screenshot evidence is incomplete until the user saves the image
 locally and a new completed capture or explicitly linked completion event is
 created.
+
+For `video`, use the same attachment states and save-first behavior. Copy a
+readable local source to `attachments/<capture-id><extension>` before media
+processing. The original video remains immutable. Store all extracted frames,
+audio, metadata, and transcripts under
+`inbox/media-processing/<capture-id>/`; never write derivatives beside or over
+the attachment.
 
 ## Processing events
 
@@ -133,6 +145,20 @@ exists. Keep these sections distinct:
 
 Never convert an inference into a user observation. Never fill a visual gap
 from latent subject knowledge in firsthand-only mode.
+
+## Video processing and interpretation
+
+Video is one evidence item with synchronized visual and audio channels. Follow
+[video-processing.md](video-processing.md) for the required local preprocessing
+artifacts and interpretation structure. In particular:
+
+- preserve onscreen text and audible speech as separate transcript sources;
+- retain timestamps and uncertainty markers;
+- treat sampled-frame coverage and machine speech recognition as fallible;
+- do not convert a machine transcript into a user statement or direct visual
+  observation;
+- do not complete interpretation while an audio stream has not been checked
+  for speech.
 
 ## Synthesized knowledge and provenance
 

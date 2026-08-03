@@ -10,7 +10,7 @@ Treat the directory containing this file as the vault root.
 ## Mandatory behavior
 
 - After Codex accepts deliberate evidence, a question, correction, decision,
-  hypothesis, open item, screenshot, or dictated transcript, persist the
+  hypothesis, open item, screenshot, video, or dictated transcript, persist the
   complete input to the active context's immutable inbox as the first agent
   action. Interpret or answer it only after persistence succeeds. Pure
   initialization, context-selection, authorization, archive-confirmation, and
@@ -20,9 +20,9 @@ Treat the directory containing this file as the vault root.
   latent model knowledge.
 - Read and write only the active context unless the user explicitly requests a
   cross-context operation.
-- Keep original captures and completed screenshot attachments immutable. Store
-  interpretation, processing changes, corrections, and synthesis separately
-  with capture-ID provenance.
+- Keep original captures and completed screenshot or video attachments
+  immutable. Store interpretation, machine transcripts, processing changes,
+  corrections, and synthesis separately with capture-ID provenance.
 - Label AI inference and uncertainty. Do not present inference as user
   evidence.
 - Use outside knowledge only for an explicit scoped request, label it, retain

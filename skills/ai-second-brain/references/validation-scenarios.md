@@ -151,3 +151,31 @@ Inspect the complete package and initialized vault.
 
 Pass: ordinary operation requires no API key, hosted plugin, connector, MCP
 service, transcription API, hosted database, Obsidian plugin, Sync, or Publish.
+Local FFmpeg and whisper.cpp dependencies are allowed and cause no hosted usage
+quota.
+
+## V16 — Video with visual text and spoken words
+
+Input: a short synthetic video containing changing onscreen messages, spoken
+words, and a non-speech sound.
+
+Pass:
+
+- one immutable video attachment exists before processing;
+- FFprobe metadata, timestamped sampled frames, extracted audio, JSON/SRT
+  machine transcripts, and a processing manifest exist under the capture ID;
+- onscreen text and audible speech are transcribed separately with timestamps;
+- the combined timeline interprets both channels without erasing provenance;
+- non-speech audio, AI inference, uncertainty, and sampling limitations remain
+  distinct;
+- no hosted transcription or model API is called.
+
+## V17 — Video without audio and video blocked on missing transcription
+
+Pass:
+
+- a video with no audio records `no-audio` and is not forced through speech
+  transcription;
+- a video with audio cannot reach `interpreted` while whisper.cpp or its model
+  is missing;
+- failure does not change the immutable capture or attachment.

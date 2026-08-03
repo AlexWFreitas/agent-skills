@@ -1,7 +1,7 @@
 interface:
   display_name: "AI Second Brain"
-  short_description: "Build grounded knowledge from your own evidence"
-  default_prompt: "Use $ai-second-brain to capture and organize this information in my active local context: [information]."
+  short_description: "Build grounded knowledge from text, images, audio, and video"
+  default_prompt: "Use $ai-second-brain to capture, interpret, and organize this evidence in my active local context: [information or media]."
 
 policy:
   allow_implicit_invocation: false

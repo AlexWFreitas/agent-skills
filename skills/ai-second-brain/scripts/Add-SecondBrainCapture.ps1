@@ -6,7 +6,7 @@ param(
     [string]$VaultPath,
 
     [Parameter(Mandatory = $true)]
-    [ValidateSet('text', 'voice', 'screenshot')]
+    [ValidateSet('text', 'voice', 'screenshot', 'video')]
     [string]$InputType,
 
     [Parameter(Mandatory = $true)]
@@ -102,8 +102,8 @@ if (-not $SessionId) { $SessionId = 'session-' + (Get-Date -Format 'yyyyMMdd') }
 if ($SessionId -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
     throw 'SessionId must contain only letters, digits, period, underscore, or hyphen.'
 }
-if ($InputType -ne 'screenshot' -and $AttachmentPath) {
-    throw 'AttachmentPath is valid only for screenshot input.'
+if ($InputType -notin @('screenshot', 'video') -and $AttachmentPath) {
+    throw 'AttachmentPath is valid only for screenshot or video input.'
 }
 
 $contextRoot = Join-Path $vaultRoot "collections\$CollectionSlug\contexts\$ContextSlug"
@@ -152,18 +152,24 @@ $attachmentRelative = 'none'
 $attachmentState = 'none'
 $copiedAttachment = $null
 
-if ($InputType -eq 'screenshot') {
+if ($InputType -in @('screenshot', 'video')) {
     if ($AttachmentPath) {
         if (-not [IO.Path]::IsPathRooted($AttachmentPath)) {
             throw 'AttachmentPath must be absolute.'
         }
         $attachmentSource = [IO.Path]::GetFullPath($AttachmentPath)
         if (-not (Test-Path -LiteralPath $attachmentSource -PathType Leaf)) {
-            throw "Screenshot file does not exist: $attachmentSource"
+            throw "Media file does not exist: $attachmentSource"
         }
         $extension = [IO.Path]::GetExtension($attachmentSource).ToLowerInvariant()
-        if ($extension -notin @('.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp')) {
-            throw "Unsupported screenshot extension '$extension'."
+        $allowedExtensions = if ($InputType -eq 'screenshot') {
+            @('.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp')
+        }
+        else {
+            @('.mp4', '.mov', '.mkv', '.webm', '.avi', '.m4v')
+        }
+        if ($extension -notin $allowedExtensions) {
+            throw "Unsupported $InputType extension '$extension'."
         }
         $copiedAttachment = Join-Path $attachmentRoot "$CaptureId$extension"
         [IO.File]::Copy($attachmentSource, $copiedAttachment, $false)
@@ -214,7 +220,7 @@ try {
         recorded_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
         state = 'pending'
         detail = if ($attachmentState -eq 'pending-save-first') {
-            'screenshot evidence awaits a user-saved local file'
+            "$InputType evidence awaits a user-saved local file"
         }
         else {
             'awaiting interpretation'
