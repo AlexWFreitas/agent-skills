@@ -45,6 +45,8 @@ with two or three mutually exclusive choices, such as selecting among plausible
 active contexts, resolving alternatives already supported by captured evidence,
 approving a local dependency download, confirming archive, or confirming
 deletion after the required impact preview. Send exactly one question per call.
+When the answer returns, perform the required capture-or-control routing and
+continue the unlocked operation in the same active assistant turn.
 
 Put the evidence-backed recommendation first and suffix its label with
 `(Recommended)`. Use a single-sentence prompt, a header of at most 12
@@ -61,6 +63,11 @@ the tool is unavailable, ask the same bounded question in plain text.
 Omit `autoResolutionMs`. Context selection, conflict resolution, downloads,
 archive, deletion, and every other vault gate require explicit user input. Tool
 presentation never changes firsthand-only boundaries or authorization.
+
+Do not stop after the answer with only an acknowledgement or summary, and do
+not require a separate "ok" to proceed. Continue context loading, conflict
+resolution, an approved download, archive, or confirmed deletion as far as the
+answer safely authorizes.
 
 Classify the returned answer exactly like any other accepted user input. A
 context, authorization, archive, or deletion selection is control input. A

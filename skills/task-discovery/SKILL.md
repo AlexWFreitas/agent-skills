@@ -10,8 +10,9 @@ then hand off a clear implementation brief. Do not execute the defined task.
 
 ## Phase contract
 
-- Ask exactly one discovery question at a time. Wait for the answer and preserve
-  it before selecting the next question.
+- Keep at most one discovery question unanswered. After the answer, preserve and
+  analyze it, continue the loop immediately, and ask the next material question
+  when one remains. This is not a one-question-per-assistant-turn limit.
 - Research proactively in read-only mode. Ask the user only for intent,
   authority, preferences, or facts unavailable from safe inspection.
 - Challenge vague claims, contradictions, risky assumptions, and premature
@@ -30,7 +31,9 @@ When Codex exposes `request_user_input`, use it for one bounded discovery
 question whose answer fits two or three mutually exclusive choices, such as
 confirming the proposed task name, resuming versus creating a distinct
 directory, choosing between already-defined alternatives, or confirming early
-closure. Send exactly one question per call.
+closure. Send exactly one question per call, but make sequential calls in the
+same continuing assistant turn as each answer returns and clears the prior
+question.
 
 Put the evidence-backed recommendation first and suffix its label with
 `(Recommended)`. Use a single-sentence prompt, a header of at most 12
@@ -43,10 +46,17 @@ long-form rationale, credentials, secrets, or any answer that needs the user's
 own wording. Ask those questions in concise plain text. If the tool is
 unavailable, ask the same bounded question in plain text.
 
-Omit `autoResolutionMs`. Every discovery question is blocking: do not select a
-default, create artifacts, or advance the discovery gate without an explicit
-answer. Tool presentation never changes the authority or evidence required by
-this skill.
+Omit `autoResolutionMs`. A discovery question blocks only work that depends on
+its unanswered result: do not select a default, create dependent artifacts, or
+advance that gate without an explicit answer. Once the answer returns, process
+it and continue without requesting a separate acknowledgement. Tool
+presentation never changes the authority or evidence required by this skill.
+
+Never end after an answer with only a recap, the next unresolved point, or a
+promise to ask the next question on a later turn. A concise transition may
+precede the next question, but it must not replace it. Stop without the next
+question only when discovery is ready to close, the user asks to pause or
+discuss, or a genuine blocker prevents identifying the next question.
 
 ## Start or resume
 
@@ -78,8 +88,9 @@ Repeat until the readiness gate passes:
    definition of done.
 4. Explain briefly why it matters and give a recommendation when evidence
    supports one. Keep recommendations distinct from verified facts.
-5. Ask one focused question about that point using the input rules above, then
-   wait.
+5. Ask one focused question about that point using the input rules above. When
+   the answer returns, restart at step 1 in the same active interaction rather
+   than ending on an acknowledgement or summary.
 
 Investigate applicable intent, outcomes, current state, stakeholders, scope,
 deliverables, requirements, constraints, dependencies, risks, sequencing,

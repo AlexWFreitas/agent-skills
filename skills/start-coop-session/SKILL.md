@@ -14,7 +14,10 @@ decisions. Do not collapse the session into a one-shot answer.
 When Codex exposes `request_user_input`, use it for one bounded question with
 two or three mutually exclusive choices, especially startup-contract
 confirmation, source-scope approval, resume confirmation, a choice between
-settled alternatives, and session closure. Send exactly one question per call.
+settled alternatives, and session closure. Send exactly one question per call,
+but continue the same active assistant turn when the answer returns. One
+question at a time means at most one unanswered question, not one question per
+assistant turn.
 
 Put the evidence-backed recommendation first and suffix its label with
 `(Recommended)`. Use a single-sentence prompt, a header of at most 12
@@ -31,6 +34,12 @@ plain text.
 Omit `autoResolutionMs` for every session gate. Confirmation, approval,
 closure, and other material decisions require an explicit answer; tool
 presentation never expands authority.
+
+After an answer, apply it and continue the work it unlocks immediately. If the
+next focused question is already known after the relevant explanation or work,
+ask it in the same response or a sequential `request_user_input` call. Do not
+stop at a summary of the answer, promise to ask the known question next turn, or
+require a separate "ok" to proceed.
 
 ## Start a new session
 
@@ -62,7 +71,9 @@ to expand scope. Keep supplied and external evidence distinguishable.
 ## Collaborate turn by turn
 
 - Explain relevant material before asking at most one focused question or
-  requesting one user action at a time. Wait for the response before advancing.
+  requesting one user action at a time. After the response, incorporate it and
+  advance immediately; when another question is already material, include it
+  after the transition instead of inserting a summary-only turn.
 - Take a larger autonomous step only when the user explicitly requests it. Do
   not interpret that request as authority to make substantive decisions unless
   the user delegates those decisions specifically.

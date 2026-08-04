@@ -13,7 +13,9 @@ implement.
 
 - Research and draft after explicit invocation. Begin implementation only after
   an unambiguous approval gate.
-- Ask exactly one focused question at a time when a material unknown remains.
+- Keep at most one focused question unanswered when a material unknown remains.
+  After the answer, continue researching or drafting immediately and ask the
+  next material question when needed. This is not a one-question-per-turn limit.
   Research first; do not ask for facts available through safe inspection.
 - Keep received source material unchanged. Generate a normalized task contract
   and a separate operational plan.
@@ -27,7 +29,9 @@ implement.
 When Codex exposes `request_user_input`, use it for one bounded question with
 two or three mutually exclusive choices, especially source precedence,
 approval mode, renewed authorization, and acceptance of a documented
-limitation. Send exactly one question per call.
+limitation. Send exactly one question per call, but make sequential calls in the
+same continuing assistant turn as answers return when more material questions
+remain.
 
 Put the evidence-backed recommendation first and suffix its label with
 `(Recommended)`. Use a single-sentence prompt, a header of at most 12
@@ -45,6 +49,11 @@ Omit `autoResolutionMs` for every planning or execution gate. Approval,
 authorization, destructive or consequential action, limitation acceptance, and
 contract amendment require an explicit user answer. Tool presentation never
 creates or broadens authority.
+
+After an answer, record it and continue the work it authorizes or clarifies
+without requesting a separate acknowledgement. If another material question is
+already known, ask it immediately after any necessary transition. Do not stop
+with only a recap and a promise to ask that question on the next turn.
 
 ## Start or resume
 
@@ -117,10 +126,10 @@ database mutations, destructive operations, purchases, external communications,
 and comparable consequential actions individually if the plan may perform them.
 Omission means they are not authorized.
 
-Continue researching and asking one material question at a time until both
-drafts are coherent enough for approval. Present a definition-only review only
-when the user requests it or a foundational decision makes detailed planning
-premature. Otherwise use the combined review by default.
+Continue researching and asking with at most one material question unanswered
+until both drafts are coherent enough for approval. Present a definition-only
+review only when the user requests it or a foundational decision makes detailed
+planning premature. Otherwise use the combined review by default.
 
 ## Obtain execution approval
 

@@ -57,6 +57,14 @@ first, let Codex supply the built-in free-form alternative, and never set an
 auto-resolution timeout for a blocking gate, authorization, destructive action,
 or other decision that requires an explicit user answer.
 
+Interpret "one question at a time" as at most one unanswered question, never as
+one question per assistant turn. After `request_user_input` returns, process the
+answer and continue the same active turn. If another material question is ready,
+ask it immediately in a new call. Do not insert a summary-only turn, announce
+that the next question will come later, or require the user to reply "ok" merely
+to continue. The same rule applies after a plain-text answer: the next assistant
+response should include the next question when one is already known.
+
 ## Validate changes
 
 Run the same commands used by CI:
