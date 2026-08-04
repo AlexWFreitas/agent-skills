@@ -13,10 +13,12 @@ implement.
 
 - Research and draft after explicit invocation. Begin implementation only after
   an unambiguous approval gate.
-- Keep at most one focused question unanswered when a material unknown remains.
-  After the answer, continue researching or drafting immediately and ask the
-  next material question when needed. This is not a one-question-per-turn limit.
-  Research first; do not ask for facts available through safe inspection.
+- Keep at most one focused question unanswered when a user-owned blocker
+  remains. After the answer, continue researching or drafting immediately and
+  ask the next user-owned question when needed. This is not a
+  one-question-per-turn limit. Research first; do not ask for facts available
+  through safe inspection or for implementation choices the plan can safely
+  own.
 - Keep received source material unchanged. Generate a normalized task contract
   and a separate operational plan.
 - Maintain coherent documents. Rewrite current synthesis; do not append routine
@@ -51,9 +53,18 @@ contract amendment require an explicit user answer. Tool presentation never
 creates or broadens authority.
 
 After an answer, record it and continue the work it authorizes or clarifies
-without requesting a separate acknowledgement. If another material question is
-already known, ask it immediately after any necessary transition. Do not stop
-with only a recap and a promise to ask that question on the next turn.
+without requesting a separate acknowledgement. If another user-owned question
+is already known, ask it immediately after any necessary transition. Do not
+stop with only a recap and a promise to ask that question on the next turn.
+
+Sequential input calls do not justify a chain of optional design questions.
+Reapply the decision-ownership rules below before each planning question.
+Search the visible conversation and canonical trail for an answer to the same
+decision in substance, not only identical wording. Do not reask because context
+was compacted, tool state was lost, or the prompt can be phrased better. Reopen
+a recorded decision only when new material evidence changes it, and state what
+changed. Reuse only an answer that directly settles the same choice; an
+adjacent fact or related requirement is not an implicit answer.
 
 ## Start or resume
 
@@ -93,6 +104,51 @@ When sources materially conflict and instructions or context do not establish
 precedence, explain the impact and ask which source governs. Make safe,
 explicit assumptions only for non-material gaps.
 
+## Decide what requires user input
+
+Keep authorization, approval, consequential-action consent, contract changes,
+and acceptance of limitations user-owned. For other unresolved points, ask the
+user only when all of these are true:
+
+- different answers would materially change the approved outcome, scope,
+  mutation authority, significant cost, permission or security boundary,
+  irreversible data or operational policy, or verification standard;
+- safe inspection, governing sources, established conventions, and the current
+  contract do not resolve the point;
+- a competent implementer cannot safely choose or defer it within the plan;
+- the user is the proper decision owner.
+
+Treat internal architecture within an already-approved boundary, algorithms,
+file formats, operational tuning, retry and timeout values, batch sizes,
+logging cadence, routine error handling, test organization, and other
+reversible mechanics as implementer-owned unless concrete evidence promotes
+them under the test above. Select an evidence-backed default, keep it
+configurable when useful, and record only the constraint or implementation
+consequence needed by the plan.
+
+Treat user-visible authorization and public input/output semantics as
+user-owned when alternatives change who can act, what callers may submit, or
+what users receive. Inspect established conventions first; if they do not
+govern, obtain the decision. Least privilege may support a recommendation but
+does not silently authorize a product policy. Do not turn internal stable
+traversal, normalization, serialization, or version handling into a public
+ordering, encoding, filename, versioning, or compatibility promise without
+governing evidence.
+
+Promote a risk to a user gate only when it is plausible in the current context,
+has a significant consequence, and needs a decision before authorization or
+execution. Do not recursively design every failure mode of a mitigation or add
+future-scale infrastructure without a current requirement. Require a special
+rollback or contingency only for a consequential, destructive, irreversible,
+or evidence-backed high-impact mutation; ordinary reversible work may use
+standard version control, retry, restore, or forward-fix practice.
+
+If the user questions relevance or depth, rejects added machinery, expresses
+frustration, or repeatedly needs low-level alternatives explained, pause and
+reassess the contract and plan. Remove speculative work, distinguish governing
+decisions from implementation latitude, and resume at the shallower depth. Do
+not split the same technical design into more user questions.
+
 ## Build the draft contract and plan
 
 Rewrite `task-definition.md` as a self-contained, execution-grade contract for
@@ -102,34 +158,43 @@ desired outcomes and success measures; functional and non-functional
 requirements; invariants; affected users and systems; scope and non-goals;
 deliverables; constraints, dependencies, and assumptions; material decisions
 and rationale; risks and mitigations; managed unknowns and gates; acceptance
-criteria; and requirement-to-deliverable-to-check traceability when material.
+criteria; and requirement-to-deliverable-to-check traceability when materially
+applicable. Do not manufacture content for a dimension that does not constrain
+this task.
 Synthesize clarification answers into the section they govern rather than
 leaving critical decisions only in conversation.
 
 Apply a materiality review rather than filling headings mechanically. Omit or
-condense a subsection only when removing it cannot change implementation,
-authority, risk, or verification. When substantial detail belongs in a
-supporting file, summarize its implementation consequence in the task
-definition and link the authoritative file.
+condense a subsection when removing it cannot change the required outcome,
+authority, a significant current risk, a governing boundary, or verification.
+Preserve implementation latitude; an exact technique or tuning value belongs
+in the contract only when governing evidence or a user-owned decision requires
+it. When substantial detail belongs in a supporting file, summarize its
+implementation consequence in the task definition and link the authoritative
+file.
 
 Build `implementation-plan.md` as the current operational record. Every phase
 must be outcome-led, bounded, dependency-aware, and independently verifiable.
 State its entry conditions, expected local and external mutations, checks,
 completion evidence, and rollback or contingency when material. Use as many
-phases and supporting documents as the work needs; impose no arbitrary count or
-duration limit. Map phases and verification evidence back to the task
-definition's outcome, requirement, deliverable, and acceptance identifiers so
-no contract item silently becomes orphaned.
+phases and supporting documents as the work needs, but use the fewest phases
+that establish meaningful dependency, authorization, mutation, recovery, or
+verification boundaries. Do not create a phase for every routine implementation
+step. Map phases and verification evidence back to the task definition's
+outcome, requirement, deliverable, and acceptance identifiers so no governing
+contract item silently becomes orphaned.
 
 List the complete intended mutation surface. Name commits, pushes, deployments,
 database mutations, destructive operations, purchases, external communications,
 and comparable consequential actions individually if the plan may perform them.
 Omission means they are not authorized.
 
-Continue researching and asking with at most one material question unanswered
-until both drafts are coherent enough for approval. Present a definition-only
-review only when the user requests it or a foundational decision makes detailed
-planning premature. Otherwise use the combined review by default.
+Continue researching while useful, but ask only about user-owned blockers until
+both drafts are sufficient for approval. Do not withhold approval for internal
+design choices, tunable defaults, ordinary recoverable mechanics, or remote
+risks the implementer can own. Present a definition-only review only when the
+user requests it or a foundational decision makes detailed planning premature.
+Otherwise use the combined review by default.
 
 ## Obtain execution approval
 
@@ -156,6 +221,12 @@ plan before implementing. At initial approval, mark and snapshot the approved
 task definition as `versions/task-definition-vNNN.md` and snapshot the plan as
 `versions/implementation-plan-vNNN.md`, using each file's next zero-padded
 version number.
+
+Throughout execution, treat a change as material only when it alters the
+approved outcome, scope, mutation authority, significant cost, permission or
+security boundary, irreversible policy, or verification standard. Ordinary
+implementation substitutions, tuning, local refactoring, and recoverable
+mechanics inside those boundaries do not require renewed approval.
 
 ## Execute the authorization
 

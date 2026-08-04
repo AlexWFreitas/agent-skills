@@ -65,6 +65,19 @@ that the next question will come later, or require the user to reply "ok" merely
 to continue. The same rule applies after a plain-text answer: the next assistant
 response should include the next question when one is already known.
 
+Before asking, check the visible conversation and the workflow's durable record
+for an answer to the same decision in substance, not only identical wording.
+Context compaction, lost tool state, or improved phrasing does not justify a
+repeat. Reopen a settled decision only when new material evidence changes it,
+and explain what changed. Reuse only an answer that directly settles the same
+choice; an adjacent fact or related requirement is not an answer.
+
+Sequential questions must still be user-owned gates. Do not use the interaction
+loop to make the user select ordinary algorithms, tuning values, reversible
+implementation mechanics, or speculative future safeguards. If the user
+questions relevance or depth, reassess the remaining questions before asking
+another one.
+
 ## Validate changes
 
 Run the same commands used by CI:

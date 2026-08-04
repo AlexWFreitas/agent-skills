@@ -6,8 +6,10 @@ Created: `<ISO-8601 timestamp with UTC offset>` · Last updated:
 `implementation-plan.md`
 
 Use this as an adaptable execution-grade contract, not a fill-in-the-blanks
-form. Remove placeholder rows. Omit or condense a subsection only when doing so
-cannot change implementation, authority, risk, or verification.
+form. Remove placeholder rows. Omit or condense a subsection when doing so
+cannot change the required outcome, authority, a significant current risk, a
+governing boundary, or verification. Preserve ordinary implementation latitude
+instead of filling every section with hypothetical detail.
 
 ## Sources and authority
 
@@ -77,7 +79,8 @@ implementation consequence of each material link.
 | C01 | `constraint | dependency | assumption` | <condition> | <how it changes sequencing, design, authority, or risk> | <check, owner, or gate> |
 
 Include applicable toolchain, platform, time, cost, compatibility, regulatory,
-access, sequencing, and consequential-action boundaries.
+access, sequencing, and consequential-action boundaries. Do not turn routine
+implementation choices or tunable defaults into contract gates.
 
 ## Material decisions and rationale
 
@@ -86,14 +89,19 @@ access, sequencing, and consequential-action boundaries.
 | DEC01 | <settled choice> | <why this choice governs> | <alternative a competent implementer must not silently choose> |
 
 Record only decisions whose omission could let a fresh implementer choose a
-different compliant-looking path. Put substantial analysis in a linked
-decision document when needed.
+materially different outcome or cross an authority or scope boundary while
+believing they complied. Put substantial analysis in a linked decision
+document when needed.
 
 ## Risks and mitigations
 
 | ID | Risk and trigger | Impact | Mitigation, contingency, or stop condition | Owner or resolver |
 | --- | --- | --- | --- | --- |
-| RSK01 | <risk> | <effect> | <prevention, detection, fallback, or gate> | <agent, user, team, or external party> |
+| RSK01 | <plausible current risk> | <significant effect> | <proportionate prevention, detection, fallback, or gate> | <agent, user, team, or external party> |
+
+Delete this section when no plausible significant risk needs to constrain the
+contract. Do not enumerate remote compound failures or the internal failure
+modes of every mitigation.
 
 ## Managed unknowns and resolution gates
 
@@ -101,8 +109,9 @@ decision document when needed.
 | --- | --- | --- | --- | --- |
 | U01 | <unavoidable unknown> | <affected scope, phase, risk, or check> | <owner and action> | <fallback or mandatory stop> |
 
-Do not leave a material unknown unmanaged. Resolve it before approval or record
-all four fields above.
+Do not leave a user-owned or execution-blocking unknown unmanaged. Resolve it
+before approval or record all four fields above. Do not list ordinary
+implementation decisions or configurable defaults as unknowns.
 
 ## Supporting documents
 
@@ -119,6 +128,11 @@ file-count limit. Create as many supporting documents as coherence requires.
 | --- | --- | --- | --- |
 | A01 | <observable behavior, boundary, or result> | <test, measurement, observation, or review> | <whether and by whom a limitation may be accepted> |
 
+Verify representative semantic behavior and data values, not only structural
+shape, field presence, or documentation. When a required value depends on an
+unverified source schema, record the implementation inspection dependency and
+safe stop gate.
+
 ## Contract traceability
 
 | Outcome or requirement | Deliverable | Supporting authority | Planned phase | Acceptance check |
@@ -131,3 +145,5 @@ check. Every deliverable and check must trace back to the governing contract.
 The task is complete when all deliverables exist, every acceptance criterion
 has the required evidence or an explicitly accepted limitation, actual state is
 reconciled, and the stated non-goals and invariants remain preserved.
+This describes completed implementation, not readiness of this contract or
+plan.

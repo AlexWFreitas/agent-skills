@@ -8,7 +8,7 @@ Created: `<ISO-8601 timestamp with UTC offset>` · Last updated:
 
 <Concise current understanding of the task and desired outcome.>
 
-- Next unresolved point: <one material question or `None - readiness review`>
+- Next unresolved point: <one user-owned blocker or `None - readiness review`>
 - Primary handoff: `task-definition.md`
 - Research notes: <linked note or `None yet`>
 - Latest snapshot: <linked snapshot or `None yet`>
@@ -28,5 +28,7 @@ the full item once here; link substantial detail instead of repeating it.
 
 - <[research-notes.md](research-notes.md): source, claim, evidence class, and limitation>
 
-Keep this record lossless. Preserve every question, answer, evidence item,
-rationale, and managed unknown in this trail or the linked notes.
+Keep this record lossless for material discovery. Preserve every asked
+question, answer, governing evidence item, rationale, and managed unknown in
+this trail or the linked notes. Do not invent exhaustive implementation choices
+merely to populate the record.

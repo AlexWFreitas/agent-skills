@@ -17,7 +17,9 @@ directly constrain work. When material, use task-specific subsections such as
 sources and authority, current state, requirements and invariants, or linked
 supporting documents. For every supporting document, state what it governs and
 the implementation consequence retained here. Delete guidance and optional
-subsections that do not affect this task.>
+subsections that do not affect this task. Preserve bounded implementation
+latitude; do not promote ordinary algorithms, tuning values, or remote
+contingencies into requirements.>
 
 ## Scope and non-goals
 
@@ -31,8 +33,8 @@ subsections that do not affect this task.>
 
 <Keep a requirement, invariant, or settled decision near this scope when
 omitting it would let a competent implementer reasonably choose a different
-compliant-looking path. Include rationale only when needed to preserve the
-decision.>
+material outcome or cross an authority or scope boundary while believing they
+complied. Include rationale only when needed to preserve the decision.>
 
 ## Deliverables
 
@@ -48,7 +50,8 @@ decision.>
 
 <Describe only the sequencing, dependencies, decision gates, risks, or managed
 unknowns needed to implement correctly. This is not a command-by-command plan,
-a separate phased implementation plan, or authorization to execute.>
+a separate phased implementation plan, or authorization to execute. Leave
+routine implementation techniques and reversible defaults to the implementer.>
 
 ## Verification and definition of done
 
@@ -58,7 +61,11 @@ a separate phased implementation plan, or authorization to execute.>
 
 <When material, add task-specific acceptance or contract-traceability
 subsections that connect governing outcomes and choices to deliverables and
-checks. Do not duplicate an authoritative supporting document.>
+checks. Verify representative semantic values and behavior, not only structural
+shape or field presence. When required output values depend on an unverified
+source schema, record the implementation inspection dependency and safe stop
+gate. Do not duplicate an authoritative supporting document.>
 
 The task is complete when the deliverables exist, the checks pass, and the
-stated non-goals have not been absorbed into implementation.
+stated non-goals have not been absorbed into implementation. This sentence
+describes completed implementation, not readiness of this discovery document.

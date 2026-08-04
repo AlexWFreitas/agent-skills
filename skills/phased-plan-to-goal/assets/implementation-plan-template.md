@@ -56,7 +56,11 @@ changes; do not create a second competing traceability ledger.
 
 | Phase | Outcome and status | Contract coverage | Entry conditions and dependencies | Expected mutations | Verification and completion evidence | Contingency |
 | --- | --- | --- | --- | --- | --- | --- |
-| P01 | <outcome> · `pending` | <O/R/D/A IDs> | <conditions> | <targets and effects> | <checks and evidence> | <rollback, fallback, or not material> |
+| P01 | <outcome> · `pending` | <O/R/D/A IDs> | <conditions> | <targets and effects> | <checks and evidence> | <proportionate rollback, fallback, standard recovery, or not material> |
+
+Use the fewest phases that create meaningful dependency, authorization,
+mutation, recovery, or verification boundaries. Do not create phases for
+routine implementation steps.
 
 Allowed phase states: `pending`, `in-progress`, `complete`, `failed`,
 `blocked`, `skipped`, or `superseded`. Explain every terminal state other than
@@ -73,6 +77,9 @@ Allowed phase states: `pending`, `in-progress`, `complete`, `failed`,
 | Item | Impact | Resolver and resolution step | Safe contingency or gate | State |
 | --- | --- | --- | --- | --- |
 | <blocker or limitation> | <effect> | <owner and action> | <fallback or stop> | `open` |
+
+List only actual execution blockers or material limitations. Do not turn
+ordinary implementation decisions, tuning values, or remote risks into gates.
 
 ## Canonical material-event trail
 

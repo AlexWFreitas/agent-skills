@@ -41,6 +41,13 @@ ask it in the same response or a sequential `request_user_input` call. Do not
 stop at a summary of the answer, promise to ask the known question next turn, or
 require a separate "ok" to proceed.
 
+Before asking, search the visible conversation and `session.md` for the same
+decision in substance, not only identical wording. Reuse the recorded answer;
+do not reask because context was compacted, tool state was lost, or the prompt
+can be phrased better. Reopen a decision only when new material evidence changes
+it, and explain what changed. Reuse only an answer that directly settles the
+same choice; an adjacent fact or related requirement is not an implicit answer.
+
 ## Start a new session
 
 1. Inspect safely available task material without changing it. Apply an
@@ -86,6 +93,12 @@ to expand scope. Keep supplied and external evidence distinguishable.
   material, or revise a tentative answer. Reconfirm the startup contract when a
   change materially affects its goal, scope, output, authority, or completion
   criteria.
+- If the user questions relevance or depth, expresses frustration, rejects
+  added machinery, or repeatedly needs low-level alternatives explained, pause
+  the current route and reassess it against the confirmed goal and completion
+  criteria. Separate user-owned decisions from work the agent can safely own,
+  remove speculative depth, and continue at the shallower level. Do not split
+  the same technical issue into more questions.
 - Use applicable specialist skills and tools for task mechanics after startup
   confirmation. Retain this skill's cadence, participation, durable-state,
   editing, pause/resume, and closure rules. Honor stricter specialist safety and
