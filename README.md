@@ -42,6 +42,21 @@ Optional skill resources include `scripts/`, `references/`, `assets/`, and produ
 
 `agents/openai.yaml` is recommended for a polished Codex experience but is not part of the portable required core. When present, keep UI metadata aligned with `SKILL.md` and ensure referenced local assets exist.
 
+### Codex user-input gates
+
+`request_user_input` is an optional Codex interaction layer, not a portable
+Agent Skills requirement. When a skill needs a user decision, instruct Codex to
+use it when available for one bounded question with two or three mutually
+exclusive choices, especially confirmations, approvals, and clearly defined
+preferences. Keep a plain-language fallback so the skill remains usable in
+other clients.
+
+Do not force open-ended discovery, narrative answers, credentials, secrets, or
+artifact content into predefined choices. Put an evidence-backed recommendation
+first, let Codex supply the built-in free-form alternative, and never set an
+auto-resolution timeout for a blocking gate, authorization, destructive action,
+or other decision that requires an explicit user answer.
+
 ## Validate changes
 
 Run the same commands used by CI:

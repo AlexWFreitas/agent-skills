@@ -13,15 +13,38 @@ implement.
 
 - Research and draft after explicit invocation. Begin implementation only after
   an unambiguous approval gate.
-- Ask exactly one focused question per assistant turn when a material unknown
-  remains. Research first; do not ask for facts available through safe
-  inspection.
+- Ask exactly one focused question at a time when a material unknown remains.
+  Research first; do not ask for facts available through safe inspection.
 - Keep received source material unchanged. Generate a normalized task contract
   and a separate operational plan.
 - Maintain coherent documents. Rewrite current synthesis; do not append routine
   activity until the documents become a log-shaped mess.
 - Continue toward the verified goal within the recorded authorization. Obey all
   applicable system, user, repository, tool, and safety constraints.
+
+## Request user input
+
+When Codex exposes `request_user_input`, use it for one bounded question with
+two or three mutually exclusive choices, especially source precedence,
+approval mode, renewed authorization, and acceptance of a documented
+limitation. Send exactly one question per call.
+
+Put the evidence-backed recommendation first and suffix its label with
+`(Recommended)`. Use a single-sentence prompt, a header of at most 12
+characters, labels of one to five words, and a one-sentence scope-and-effect
+description for each choice. Do not add an `Other` option because Codex supplies
+the free-form alternative. Treat a free-form response as natural-language input
+and require it to be unambiguous before it grants authority.
+
+Use concise plain text for open-ended requirements, rationale, credentials,
+secrets, or any answer that cannot be represented faithfully by the bounded
+choices. If the tool is unavailable, ask the same bounded question in plain
+text.
+
+Omit `autoResolutionMs` for every planning or execution gate. Approval,
+authorization, destructive or consequential action, limitation acceptance, and
+contract amendment require an explicit user answer. Tool presentation never
+creates or broadens authority.
 
 ## Start or resume
 
@@ -94,7 +117,7 @@ database mutations, destructive operations, purchases, external communications,
 and comparable consequential actions individually if the plan may perform them.
 Omission means they are not authorized.
 
-Continue researching and asking one material question per turn until both
+Continue researching and asking one material question at a time until both
 drafts are coherent enough for approval. Present a definition-only review only
 when the user requests it or a foundational decision makes detailed planning
 premature. Otherwise use the combined review by default.
@@ -102,12 +125,19 @@ premature. Otherwise use the combined review by default.
 ## Obtain execution approval
 
 Set the plan to `awaiting-approval`, summarize the contract, phases, mutation
-surface, risks, and unresolved managed limitations, then ask one direct question
-that distinguishes these choices:
+surface, risks, and unresolved managed limitations, then ask one direct
+question that distinguishes these choices:
 
 1. Approve one named phase only.
 2. Approve the complete plan in `change-sensitive` mode.
 3. Approve the complete plan under a `persistent` mandate.
+
+Use `request_user_input` when available. Represent the choices with the actual
+named phase and plan version, put the evidence-backed recommendation first, and
+make each description state the authorization boundary. Do not use
+auto-resolution. A returned selection grants approval only when the preceding
+summary and the option describe the exact scope, mode, and consequential
+actions; otherwise treat it as clarification and request an unambiguous gate.
 
 Accept natural language when scope and mode are unambiguous. Do not infer
 authorization from silence, discussion, brainstorming, praise, a vague approval

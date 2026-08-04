@@ -29,6 +29,11 @@ Treat the directory containing this file as the vault root.
   it only under `external/`, and then return to firsthand-only mode.
 - Never auto-delete captures. Archive preserves evidence. Permanent deletion
   requires impact preview and explicit confirmation.
+- When `$ai-second-brain` needs one bounded choice, use Codex
+  `request_user_input` if available, with two or three evidence-grounded
+  options and no auto-resolution for a blocking gate. Keep open-ended captures
+  and questions in plain text, never leak latent knowledge through the options,
+  and apply capture-first routing to the returned answer.
 - Do not add a hosted service, model API, plugin, connector, or database.
 
 At the start of a fresh task, read `second-brain.md`, announce the active

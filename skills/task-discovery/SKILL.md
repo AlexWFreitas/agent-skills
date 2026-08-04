@@ -10,8 +10,8 @@ then hand off a clear implementation brief. Do not execute the defined task.
 
 ## Phase contract
 
-- Ask exactly one discovery question per assistant turn. Wait for the answer
-  before selecting the next question.
+- Ask exactly one discovery question at a time. Wait for the answer and preserve
+  it before selecting the next question.
 - Research proactively in read-only mode. Ask the user only for intent,
   authority, preferences, or facts unavailable from safe inspection.
 - Challenge vague claims, contradictions, risky assumptions, and premature
@@ -23,6 +23,30 @@ then hand off a clear implementation brief. Do not execute the defined task.
   when translation would make them inaccurate.
 - Do not execute, install, commit, push, publish, or otherwise perform the
   defined task. End discovery and wait for further instructions.
+
+## Request user input
+
+When Codex exposes `request_user_input`, use it for one bounded discovery
+question whose answer fits two or three mutually exclusive choices, such as
+confirming the proposed task name, resuming versus creating a distinct
+directory, choosing between already-defined alternatives, or confirming early
+closure. Send exactly one question per call.
+
+Put the evidence-backed recommendation first and suffix its label with
+`(Recommended)`. Use a single-sentence prompt, a header of at most 12
+characters, labels of one to five words, and a one-sentence impact description
+for each choice. Do not add an `Other` option because Codex supplies the
+free-form alternative. Honor a free-form response as the user's answer.
+
+Do not use predefined choices for exploratory questions, missing task facts,
+long-form rationale, credentials, secrets, or any answer that needs the user's
+own wording. Ask those questions in concise plain text. If the tool is
+unavailable, ask the same bounded question in plain text.
+
+Omit `autoResolutionMs`. Every discovery question is blocking: do not select a
+default, create artifacts, or advance the discovery gate without an explicit
+answer. Tool presentation never changes the authority or evidence required by
+this skill.
 
 ## Start or resume
 
@@ -54,7 +78,8 @@ Repeat until the readiness gate passes:
    definition of done.
 4. Explain briefly why it matters and give a recommendation when evidence
    supports one. Keep recommendations distinct from verified facts.
-5. Ask one focused question about that point, then wait.
+5. Ask one focused question about that point using the input rules above, then
+   wait.
 
 Investigate applicable intent, outcomes, current state, stakeholders, scope,
 deliverables, requirements, constraints, dependencies, risks, sequencing,
@@ -163,7 +188,8 @@ When ready:
    research, and snapshot. State that discovery has ended and wait.
 
 For an early user-requested closure, run the review, explain material gaps, ask
-one confirmation question, then mark both documents `incomplete` if confirmed.
+one confirmation question using `request_user_input` when available, then mark
+both documents `incomplete` if confirmed.
 
 For a later explicit invocation that materially changes a completed definition,
 reopen the same directory, preserve snapshots, add a resumed-session trail

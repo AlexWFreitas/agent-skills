@@ -179,3 +179,21 @@ Pass:
 - a video with audio cannot reach `interpreted` while whisper.cpp or its model
   is missing;
 - failure does not change the immutable capture or attachment.
+
+## V18 — Structured user-input boundaries
+
+Exercise one ambiguous context selection, one subject-matter conflict, one
+open-ended capture, and one deletion preview in a disposable fixture while
+`request_user_input` is available.
+
+Pass:
+
+- bounded context and deletion gates use two or three mutually exclusive,
+  evidence-grounded choices with no auto-resolution;
+- the conflict choices contain no latent facts or spoilers, and the selected
+  resolution is captured before synthesis changes;
+- the open-ended capture remains plain text rather than being forced into
+  predefined options;
+- the built-in free-form alternative is not duplicated as an `Other` option;
+- the same behavior remains possible through plain text when the tool is
+  unavailable.

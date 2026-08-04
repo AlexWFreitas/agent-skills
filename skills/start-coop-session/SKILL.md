@@ -9,6 +9,29 @@ Treat the session as shared work. Contribute analysis and perform agreed
 mechanical work, but keep the user involved in substantive understanding and
 decisions. Do not collapse the session into a one-shot answer.
 
+## Request user input
+
+When Codex exposes `request_user_input`, use it for one bounded question with
+two or three mutually exclusive choices, especially startup-contract
+confirmation, source-scope approval, resume confirmation, a choice between
+settled alternatives, and session closure. Send exactly one question per call.
+
+Put the evidence-backed recommendation first and suffix its label with
+`(Recommended)`. Use a single-sentence prompt, a header of at most 12
+characters, labels of one to five words, and a one-sentence effect description
+for each choice. Do not add an `Other` option because Codex supplies the
+free-form alternative. Treat a free-form response as the user's answer and
+preserve its meaning in `session.md` when material.
+
+Use concise plain text instead when the user needs to explain, draft, supply
+facts, provide credentials or secrets, perform an action, or answer outside a
+bounded choice. If the tool is unavailable, ask the same bounded question in
+plain text.
+
+Omit `autoResolutionMs` for every session gate. Confirmation, approval,
+closure, and other material decisions require an explicit answer; tool
+presentation never expands authority.
+
 ## Start a new session
 
 1. Inspect safely available task material without changing it. Apply an
@@ -22,7 +45,8 @@ decisions. Do not collapse the session into a one-shot answer.
    - session-record and working-copy locations;
    - completion criteria;
    - initial route.
-4. Ask one focused question requesting confirmation of the complete contract.
+4. Ask one focused question requesting confirmation of the complete contract,
+   using `request_user_input` when available with confirm and revise choices.
    Do not begin substantive work or create artifacts before confirmation.
 5. After confirmation, create `docs/coop/<session-name>/` by default. Copy
    [assets/session-template.md](assets/session-template.md) to `session.md`,
@@ -38,7 +62,7 @@ to expand scope. Keep supplied and external evidence distinguishable.
 ## Collaborate turn by turn
 
 - Explain relevant material before asking at most one focused question or
-  requesting one user action per turn. Wait for the response before advancing.
+  requesting one user action at a time. Wait for the response before advancing.
 - Take a larger autonomous step only when the user explicitly requests it. Do
   not interpret that request as authority to make substantive decisions unless
   the user delegates those decisions specifically.
@@ -132,7 +156,9 @@ When an invocation identifies an existing session:
 2. Read `session.md`, inspect the current source and working artifacts, and
    reconcile drift.
 3. Summarize the current state and proposed next action.
-4. Ask one focused question confirming continuation before substantive work.
+4. Ask one focused question confirming continuation before substantive work,
+   using `request_user_input` when available with continue and revise-contract
+   choices.
 5. Resolve any conflict affecting goal, scope, output, authority, or completion
    criteria through that confirmation rather than silently merging it.
 
@@ -145,7 +171,8 @@ unchanged merely because the agent itself did not edit it.
 Propose successful closure only after checking the startup contract's
 completion criteria, reconciling `session.md` with current artifacts, and
 summarizing completed work, final outputs, and unresolved limitations. Ask one
-focused question for explicit closure confirmation. Keep the session `active`
+focused question for explicit closure confirmation, using `request_user_input`
+when available with complete and keep-active choices. Keep the session `active`
 unless the user confirms; then set it to `completed`.
 
 If the user explicitly ends early, set the state to `abandoned`. Preserve the

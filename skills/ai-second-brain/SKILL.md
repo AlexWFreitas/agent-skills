@@ -38,6 +38,36 @@ the portable behavioral authority:
 If helpers are unavailable, reproduce the vault contract exactly with safe
 local file tools. Do not introduce a hosted service or database.
 
+## Request user input
+
+When Codex exposes `request_user_input`, use it only for one bounded question
+with two or three mutually exclusive choices, such as selecting among plausible
+active contexts, resolving alternatives already supported by captured evidence,
+approving a local dependency download, confirming archive, or confirming
+deletion after the required impact preview. Send exactly one question per call.
+
+Put the evidence-backed recommendation first and suffix its label with
+`(Recommended)`. Use a single-sentence prompt, a header of at most 12
+characters, labels of one to five words, and a one-sentence effect description
+for each choice. Do not add an `Other` option because Codex supplies the
+free-form alternative. Never put latent subject knowledge, spoilers, or an
+uncaptured claim into a question, label, description, or recommendation.
+
+Do not use predefined choices for ordinary captures, open-ended subject
+questions, dictated content, media-save instructions, credentials, secrets, or
+answers that require the user's own words. Use concise plain text instead. If
+the tool is unavailable, ask the same bounded question in plain text.
+
+Omit `autoResolutionMs`. Context selection, conflict resolution, downloads,
+archive, deletion, and every other vault gate require explicit user input. Tool
+presentation never changes firsthand-only boundaries or authorization.
+
+Classify the returned answer exactly like any other accepted user input. A
+context, authorization, archive, or deletion selection is control input. A
+selection that resolves a subject-matter ambiguity, corrects a claim, or adds a
+decision is deliberate evidence: persist it as the first action before updating
+interpretations or synthesis.
+
 ## Non-negotiable boundaries
 
 - After Codex accepts a deliberate input, persist it as the first agent action
@@ -102,7 +132,9 @@ After capture-first routing, or immediately for a pure control command:
    activity reference, processing events, and the minimum evidence needed.
 4. Stop for confirmation when no active context exists, multiple contexts
    plausibly match, or the opening input is a control command indicating
-   another subject. Do not read a sibling context while selection is
+   another subject. When two or three known contexts plausibly match, use
+   `request_user_input` if available without reading their contents. Otherwise
+   ask in plain text. Do not read a sibling context while selection is
    ambiguous.
 5. Resume from durable files. Never treat prior chat as required authority.
 
@@ -184,8 +216,10 @@ conflict or interpretation problem.
   and append the change to the timeline.
 - **State transition:** preserve old and new states with applicable times.
 - **Ambiguous conflict:** preserve both, mark current knowledge uncertain,
-  append a `conflicted` event, and ask the user. Never pick a winner from model
-  memory, confidence, or recency alone.
+  append a `conflicted` event, and ask the user. Use `request_user_input` when
+  two or three evidence-grounded resolutions are bounded; capture the returned
+  resolution before applying it. Never pick a winner from model memory,
+  confidence, or recency alone.
 
 ## Use bounded initiative
 
@@ -220,8 +254,10 @@ Archive only by changing lifecycle to `archived`; preserve evidence.
 
 For permanent deletion, follow the impact-preview and confirmation procedure in
 the vault contract. The initial request authorizes preview only. Do not delete
-until a later unambiguous confirmation names the previewed scope. Repair
-dangling references in the same bounded operation and report partial failure.
+until a later unambiguous confirmation names the previewed scope. Use
+`request_user_input` when available for that later confirm-or-cancel gate, with
+no auto-resolution. Repair dangling references in the same bounded operation
+and report partial failure.
 
 ## Validate behavior
 

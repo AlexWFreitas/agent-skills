@@ -36,8 +36,11 @@ quality by file count, line count, or heading count.
   the compact source material failed to mention them.
 - Remaining unknowns are non-material or have an impact, resolver, resolution
   step, and safe contingency or gate.
-- The direct approval question distinguishes one phase, complete-plan
-  change-sensitive, and complete-plan persistent authorization.
+- The direct approval question distinguishes one named phase, complete-plan
+  change-sensitive, and complete-plan persistent authorization. When
+  `request_user_input` is available, it presents those three bounded choices,
+  identifies an evidence-backed recommendation, names the exact scope, and has
+  no auto-resolution timeout.
 
 ## Before starting or changing a phase
 
