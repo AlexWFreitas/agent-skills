@@ -48,6 +48,10 @@ can be phrased better. Reopen a decision only when new material evidence changes
 it, and explain what changed. Reuse only an answer that directly settles the
 same choice; an adjacent fact or related requirement is not an implicit answer.
 
+Keep each bounded question scoped to one decision. An option may explain its
+material consequences, but do not embed a separate unconfirmed substantive
+choice and later treat selection as authority for both.
+
 ## Start a new session
 
 1. Inspect safely available task material without changing it. Apply an
@@ -109,8 +113,8 @@ to expand scope. Keep supplied and external evidence distinguishable.
 For documents that require answers or decisions, discuss and settle the
 substance with the user while performing the mechanical edits yourself.
 
-- Treat a clearly settled answer or decision as authority to update the working
-  copy immediately, then report the change briefly.
+- Treat a clearly settled answer or decision as authority to update only the
+  working-copy content it directly settles, then report the change briefly.
 - Do not convert tentative discussion into artifact content.
 - Ask separately when wording remains ambiguous, an edit is destructive, or
   materially different formulations remain viable.

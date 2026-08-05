@@ -57,6 +57,12 @@ first, let Codex supply the built-in free-form alternative, and never set an
 auto-resolution timeout for a blocking gate, authorization, destructive action,
 or other decision that requires an explicit user answer.
 
+Keep each bounded question scoped to one decision. An option may explain its
+material consequences, but do not embed a separate unconfirmed foundational
+choice and later treat selection as authority for both. A deliberately compound
+approval is valid only when the compound artifact or scope is itself the named
+decision and the preceding summary and option make its contents explicit.
+
 Interpret "one question at a time" as at most one unanswered question, never as
 one question per assistant turn. After `request_user_input` returns, process the
 answer and continue the same active turn. If another material question is ready,

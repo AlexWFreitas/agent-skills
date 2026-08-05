@@ -110,6 +110,17 @@ Classify each unresolved point before asking about it:
    it depends on unestablished scale, a remote compound failure, a future
    topology, or an unrequested capability.
 
+Treat a **resolved but consequence-bearing** point as a disclosure obligation,
+not a fourth unresolved-point classification. When explicit requirements or
+governing evidence settle a lifecycle, propagation, availability,
+compatibility, or manual-operation boundary, do not ask for redundant
+confirmation. Translate the boundary into observable behavior: when a change
+takes effect, what already-running or in-flight consumers continue to see, and
+whether a restart, reconnect, redeploy, or other manual action is required.
+Surface a material consequence in both the task definition and concise final
+handoff. Ask only if the evidence still permits materially different
+user-owned outcomes.
+
 Treat risk as material only when the scenario is plausible in the stated
 context and its consequence justifies consuming user attention now. A
 theoretical possibility or any change in technical risk is not enough. Once a
@@ -121,6 +132,21 @@ materially different infrastructure, cost, compatibility, or operational
 behavior. After that boundary is settled, do not ask the user to tune each
 internal mechanism. If a question cannot briefly state why the user owns it and
 what materially different delivery would result, do not ask it.
+
+Technical feasibility, reuse of an existing mechanism, lower implementation
+cost, or a conservative default may support a recommendation, but none alone
+authorizes a governing choice. Classify the choice using the full tests above.
+For an implementer-owned choice, keep the recommendation non-governing and
+preserve latitude for a competent implementer to substitute another compliant
+technique. For a user-owned foundational choice, require direct governing
+evidence or an explicit answer before the definition excludes alternatives or
+makes the recommendation mandatory. A schema or migration difference alone
+does not make a choice user-owned.
+
+Keep each question scoped to one decision. An option may explain its material
+consequences, but do not embed a separate unconfirmed foundational choice and
+later treat selection of that option as authority for both. A user's answer
+settles only the decision actually asked.
 
 Treat user-visible authorization and public input/output semantics as
 user-owned when alternatives change who can act, what callers may submit, or
@@ -201,6 +227,11 @@ traceability, or similar dimensions only when omission could change
 implementation, authority, risk, a boundary, or verification. Put a constraint
 or decision beside the work or check it governs rather than collecting detached
 rules.
+
+State a material operational non-goal in observable terms, not only as a
+technical exclusion. For example, if live refresh is excluded, also state when
+saved changes reach already-running consumers and whether a restart is
+required. Do not add lifecycle detail when it is immaterial to the task.
 
 Use `Recommended implementation approach` for outcome-level sequencing,
 dependencies, and decision gates a fresh implementer needs. Do not turn it into
@@ -286,7 +317,10 @@ When ready:
 4. Create `versions/` if absent and save the definition as the next zero-padded
    snapshot, such as `versions/task-definition-v001.md`.
 5. Present concise links to the task definition, discovery record, supporting
-   research, and snapshot. State that discovery has ended and wait.
+   research, and snapshot. Briefly state the primary user-visible outcome and,
+   when applicable, the most important operational boundary, delayed-effect
+   behavior, or required manual action. State that discovery has ended and
+   wait.
 
 For an early user-requested closure, run the review, explain material gaps, ask
 one confirmation question using `request_user_input` when available, then mark

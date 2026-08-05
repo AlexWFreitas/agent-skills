@@ -21,6 +21,10 @@ quality by file count, line count, or heading count.
 - Material decisions preserve rationale and prohibit silent substitution of an
   approach that changes the required outcome or crosses an authority or scope
   boundary.
+- Every material lifecycle, propagation, availability, compatibility, or
+  manual-operation boundary is translated into observable behavior, including
+  delayed effects on already-running or in-flight consumers and any required
+  restart, reconnect, redeploy, or other manual action when applicable.
 - Plausible significant risks have triggers, impacts, proportionate mitigations
   or contingencies, and a resolver. Remote compound failures and speculative
   future-scale concerns were not promoted into current scope.
@@ -51,6 +55,13 @@ quality by file count, line count, or heading count.
 - Every planning question was user-owned because it affected the outcome,
   scope, authority, significant cost, irreversible policy, or verification and
   could not be resolved or safely delegated.
+- Every foundational recommendation made governing traces to direct governing
+  evidence or an explicit owner decision. Technical feasibility, reuse, lower
+  cost, or a conservative default was not treated as authority; an
+  implementer-owned default remains adaptable in the plan.
+- Each clarification answer governs only the decision actually asked. No
+  option bundled a separate unconfirmed foundational choice and treated one
+  selection as authority for both.
 - Every user-visible authorization rule and public input/output semantic traces
   to governing evidence or an explicit owner decision; conservative defaults
   and adjacent requirements were not treated as silent authority.
@@ -67,7 +78,8 @@ quality by file count, line count, or heading count.
   change-sensitive, and complete-plan persistent authorization. When
   `request_user_input` is available, it presents those three bounded choices,
   identifies an evidence-backed recommendation, names the exact scope, and has
-  no auto-resolution timeout.
+  no auto-resolution timeout. Its preceding summary makes any material
+  user-visible operational boundary or required manual action salient.
 
 ## Before starting or changing a phase
 
@@ -111,4 +123,5 @@ quality by file count, line count, or heading count.
 - The plan and supporting documents form a coherent, non-duplicative whole that
   a fresh agent can resume without chat context.
 - Complete final snapshots exist and the handoff identifies results, evidence,
-  accepted limitations, and follow-up work.
+  accepted limitations, material operational behavior or manual action, and
+  follow-up work.

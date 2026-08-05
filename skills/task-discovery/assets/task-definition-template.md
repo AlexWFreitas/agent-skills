@@ -34,7 +34,12 @@ contingencies into requirements.>
 <Keep a requirement, invariant, or settled decision near this scope when
 omitting it would let a competent implementer reasonably choose a different
 material outcome or cross an authority or scope boundary while believing they
-complied. Include rationale only when needed to preserve the decision.>
+complied. Include rationale only when needed to preserve the decision.
+Translate a material lifecycle, propagation, availability, compatibility, or
+manual-operation non-goal into observable behavior: state when a change takes
+effect, what already-running or in-flight consumers continue to see, and any
+required restart, reconnect, redeploy, or other manual action. Omit this detail
+when it is not material.>
 
 ## Deliverables
 

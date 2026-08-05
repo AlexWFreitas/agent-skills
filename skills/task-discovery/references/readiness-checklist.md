@@ -27,6 +27,10 @@ Explain any non-obvious `not-applicable` result.
 - Every settled choice whose omission would permit a materially different
   outcome or an authority or scope violation is retained beside the scope,
   approach, or verification check it constrains.
+- Every material lifecycle, propagation, availability, compatibility, or
+  manual-operation boundary is translated into observable behavior, including
+  delayed effects on already-running or in-flight consumers and any required
+  restart, reconnect, redeploy, or other manual action when applicable.
 - Exact algorithms, operational tuning values, recoverable mechanics, and
   future-scale provisions appear only when governing evidence or an explicit
   user-owned decision makes them requirements.
@@ -61,6 +65,13 @@ Explain any non-obvious `not-applicable` result.
 - Every user-visible authorization rule and public input/output semantic traces
   to governing evidence or an explicit user-owned decision. A conservative
   default was not used as silent product authority.
+- Every foundational recommendation made governing traces to direct governing
+  evidence or an explicit user answer. Technical feasibility, reuse, lower
+  cost, or a conservative default was not treated as authority; an
+  implementer-owned recommendation retains substitution latitude.
+- Each user answer governs only the decision actually asked. No option bundled
+  a separate unconfirmed foundational choice and treated one selection as
+  authority for both.
 - Reusing an earlier answer required that it directly settle the same decision;
   adjacent facts and related requirements were not treated as implicit answers.
 - Implementer-owned choices use bounded latitude, evidence-backed constraints,
@@ -112,6 +123,9 @@ Using only `task-definition.md`, confirm that a fresh agent can:
 - Explain the intended outcome, relevant current state, boundaries,
   deliverables, recommended approach, and completion evidence in a coherent
   sequence.
+- Explain the most important user-visible operational limitation and any
+  required manual action, rather than naming only the excluded technical
+  mechanism.
 - Identify the governing choices and invariants that must not be silently
   substituted.
 - Reject a reasonable but incorrect implementation path that conflicts with

@@ -66,6 +66,13 @@ a recorded decision only when new material evidence changes it, and state what
 changed. Reuse only an answer that directly settles the same choice; an
 adjacent fact or related requirement is not an implicit answer.
 
+Keep each clarification question scoped to one decision. An option may explain
+its material consequences, but do not embed a separate unconfirmed
+foundational choice and later treat selection as authority for both. This does
+not prevent direct approval of a named phase or versioned complete plan from
+authorizing all contents that the preceding summary and approval option make
+explicit.
+
 ## Start or resume
 
 1. Accept one or more files, directories, or conversation-supplied sources. A
@@ -126,6 +133,15 @@ them under the test above. Select an evidence-backed default, keep it
 configurable when useful, and record only the constraint or implementation
 consequence needed by the plan.
 
+Technical feasibility, reuse of an existing mechanism, lower implementation
+cost, or a conservative default may support a recommendation, but none alone
+authorizes a governing contract choice. Classify the choice using the full
+tests above. Keep an implementer-owned default adaptable in the plan and retain
+only its required outcome or constraint in the task definition. For a
+user-owned foundational choice, require direct governing evidence or an
+explicit answer before making it normative or excluding alternatives. A schema
+or migration difference alone does not make a choice user-owned.
+
 Treat user-visible authorization and public input/output semantics as
 user-owned when alternatives change who can act, what callers may submit, or
 what users receive. Inspect established conventions first; if they do not
@@ -134,6 +150,15 @@ does not silently authorize a product policy. Do not turn internal stable
 traversal, normalization, serialization, or version handling into a public
 ordering, encoding, filename, versioning, or compatibility promise without
 governing evidence.
+
+Treat a **resolved but consequence-bearing** point as a disclosure obligation,
+not another planning question. When the contract or governing evidence settles
+a lifecycle, propagation, availability, compatibility, or manual-operation
+boundary, translate it into observable behavior: when a change takes effect,
+what already-running or in-flight consumers continue to see, and whether a
+restart, reconnect, redeploy, or other manual action is required. Surface a
+material consequence in the task definition and approval summary. Ask only if
+the evidence still permits materially different user-owned outcomes.
 
 Promote a risk to a user gate only when it is plausible in the current context,
 has a significant consequence, and needs a decision before authorization or
@@ -173,6 +198,10 @@ it. When substantial detail belongs in a supporting file, summarize its
 implementation consequence in the task definition and link the authoritative
 file.
 
+State a material operational non-goal in observable terms, not only as a
+technical exclusion. Do not add lifecycle detail when it is immaterial to the
+task.
+
 Build `implementation-plan.md` as the current operational record. Every phase
 must be outcome-led, bounded, dependency-aware, and independently verifiable.
 State its entry conditions, expected local and external mutations, checks,
@@ -199,8 +228,9 @@ Otherwise use the combined review by default.
 ## Obtain execution approval
 
 Set the plan to `awaiting-approval`, summarize the contract, phases, mutation
-surface, risks, and unresolved managed limitations, then ask one direct
-question that distinguishes these choices:
+surface, risks, unresolved managed limitations, and any material user-visible
+operational boundary or required manual action, then ask one direct question
+that distinguishes these choices:
 
 1. Approve one named phase only.
 2. Approve the complete plan in `change-sensitive` mode.
@@ -326,6 +356,7 @@ coherently without chat context.
 
 Set the plan to `complete`, leave the approved task-contract content unchanged,
 create complete final snapshots, and provide a concise handoff covering
-results, evidence, accepted limitations, and follow-up work. Do not perform an
-install, commit, push, publication, deployment, or other consequential action
-unless the approved plan authorized it by name.
+results, evidence, accepted limitations, material operational behavior or
+manual action, and follow-up work. Do not perform an install, commit, push,
+publication, deployment, or other consequential action unless the approved
+plan authorized it by name.

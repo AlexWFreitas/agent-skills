@@ -66,6 +66,12 @@ implementation consequence of each material link.
 
 - <Boundary that prevents a likely misunderstanding or authority expansion.>
 
+<Translate a material lifecycle, propagation, availability, compatibility, or
+manual-operation non-goal into observable behavior: state when a change takes
+effect, what already-running or in-flight consumers continue to see, and any
+required restart, reconnect, redeploy, or other manual action. Omit this detail
+when it is not material.>
+
 ## Deliverables
 
 | ID | Deliverable | Required outcome | Governing requirements |
@@ -91,7 +97,8 @@ implementation choices or tunable defaults into contract gates.
 Record only decisions whose omission could let a fresh implementer choose a
 materially different outcome or cross an authority or scope boundary while
 believing they complied. Put substantial analysis in a linked decision
-document when needed.
+document when needed. Technical feasibility, reuse, lower cost, or a
+conservative default does not by itself supply governing authority.
 
 ## Risks and mitigations
 
