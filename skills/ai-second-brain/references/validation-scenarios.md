@@ -54,10 +54,16 @@ Pass:
 
 ## V05 — Accepted-message retry
 
-Simulate a failure after capture creation and retry using the same capture ID.
+Choose and pass a capture ID before the first helper call. Simulate loss of the
+successful tool result after capture creation, then retry the exact operation.
 
-Pass: one capture and one initial pending event remain; retry reports the
-existing capture.
+Pass:
+
+- the retry uses the original candidate ID rather than generating a new one;
+- one capture and one initial pending event remain;
+- retry reports the existing capture;
+- if the candidate ID is unavailable, one exact-input search either identifies
+  one capture or stops as unverified without creating another capture.
 
 ## V06 — Checkpoint reconciliation
 
@@ -106,8 +112,8 @@ Pass:
 
 ## V10 — Fresh-task continuity
 
-End with a checkpoint, abandon chat history, and start a fresh Codex task in the
-same vault.
+End with a checkpoint or task-rollover instruction, abandon chat history, and
+start a genuinely fresh Codex task in the same vault. Do not fork the old task.
 
 Pass: the assistant announces the active collection/context and resumes from
 durable state, open items, and minimum recent evidence without relying on the
@@ -197,3 +203,23 @@ Pass:
 - the built-in free-form alternative is not duplicated as an `Other` option;
 - the same behavior remains possible through plain text when the tool is
   unavailable.
+
+## V19 — Context-compaction rollover
+
+In an isolated fixture, simulate a long multimodal activity task. Trigger one
+context compaction after a capture helper has run, then simulate a second
+compaction before interpretation finishes.
+
+Pass:
+
+- the capture ID was chosen and passed before the first helper call;
+- after the first compaction, the assistant performs only the bounded retry or
+  verification needed to establish the accepted capture's durable state;
+- the assistant does not reread complete skill resources, enumerate tools,
+  restart media processing, or repeat completed discovery;
+- after the second compaction, nonessential work and retries stop, and the
+  response states `captured`, `existing-capture`, or `unverified` from evidence;
+- no duplicate capture or initial processing event is created;
+- the user is told to continue in a fresh task rooted at the same vault, not a
+  fork of the saturated task;
+- the fresh task resumes from durable state without requiring the old chat.

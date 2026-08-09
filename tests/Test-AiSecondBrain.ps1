@@ -4,6 +4,8 @@ $completeScreenshotScript = Join-Path $repositoryRoot 'skills\ai-second-brain\sc
 $completeVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Complete-SecondBrainVideo.ps1'
 $processVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Process-SecondBrainVideo.ps1'
 $processingEventScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainProcessingEvent.ps1'
+$skillPath = Join-Path $repositoryRoot 'skills\ai-second-brain\SKILL.md'
+$validationScenariosPath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\validation-scenarios.md'
 
 function New-SecondBrainFixture {
     param([string]$Name)
@@ -241,6 +243,28 @@ Invoke-Test 'second brain capture retry with an existing capture id does not dup
     Assert-Equal 1 @($captureFiles).Count 'Retry created duplicate capture evidence.'
     $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\inbox\processing-events.jsonl')
     Assert-Equal 1 @($ledger).Count 'Retry duplicated the processing event.'
+}
+
+Invoke-Test 'second brain skill bounds compaction recovery and task rollover' {
+    $skill = Get-Content -Raw $skillPath
+    $scenarios = Get-Content -Raw $validationScenariosPath
+
+    Assert-True ($skill.Contains('Before the first helper call, choose one candidate capture ID')) `
+        'Skill does not preallocate a capture ID before persistence.'
+    Assert-True ($skill.Contains('pass that ID through `-CaptureId`')) `
+        'Skill does not require the candidate ID on the first helper call.'
+    Assert-True ($skill.Contains('retry the exact capture at most once with that ID')) `
+        'Skill does not bound uncertain-result capture retries.'
+    Assert-True ($skill.Contains('Treat the first context compaction in a task as a rollover signal')) `
+        'Skill does not roll over a task after context compaction.'
+    Assert-True ($skill.Contains('If a second context compaction occurs')) `
+        'Skill does not stop a repeated compaction loop.'
+    Assert-True ($skill.Contains('Do not fork the saturated task')) `
+        'Skill does not prevent rollover by history-preserving fork.'
+    Assert-True ($skill.Contains('Lost working context is not a tool error.')) `
+        'Skill does not distinguish compaction loss from a verified tool failure.'
+    Assert-True ($scenarios.Contains('## V19 — Context-compaction rollover')) `
+        'Validation scenarios do not exercise context-compaction rollover.'
 }
 
 Invoke-Test 'second brain processing events append without rewriting capture evidence' {

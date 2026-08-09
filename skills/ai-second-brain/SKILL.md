@@ -109,23 +109,63 @@ subject-matter interpretation.
 
 For every deliberate capture in an initialized vault:
 
-1. As the first agent action, run
+1. Before the first helper call, choose one candidate capture ID in the vault
+   contract format. As the first agent action, run
    [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
-   against the vault root. Pass the complete accepted text, corrected dictated
-   transcript, or screenshot/video message and caption without summarizing it.
+   against the vault root and pass that ID through `-CaptureId`. Pass the
+   complete accepted text, corrected dictated transcript, or screenshot/video
+   message and caption without summarizing it.
 2. For a screenshot or video, pass a local attachment path only when Codex
    exposes one. Otherwise create the capture without a path so it remains
    `pending-save-first`.
 3. If persistence fails, report the failure immediately. Do not interpret,
    answer, or reorganize that input until durable capture succeeds.
-4. Retain the returned capture ID for every later interpretation, processing
-   event, synthesized claim, and response citation.
+4. Retain the candidate capture ID and returned state for every retry,
+   interpretation, processing event, synthesized claim, and response citation.
 
-When retrying after an uncertain result, reuse the reported capture ID. The
-helper returns `existing-capture` instead of duplicating evidence.
+Use the same candidate capture ID on the first call and every retry. If the
+result is uncertain, retry the exact capture at most once with that ID; the
+helper returns `existing-capture` instead of duplicating evidence. Never assign
+a new ID to the same accepted input merely because tool output was lost.
+
+If compaction obscures the candidate ID, make one bounded search in the active
+context's newest capture directory for the exact unsummarized input and local
+attachment basename. Adopt one exact match. If the search finds none or more
+than one, report the capture as unverified and stop; do not generate another ID
+or interpret the input.
 
 If pending media is later saved locally, run the matching completion helper
 with the original capture ID. Do not rewrite its capture Markdown.
+
+## Keep the Codex task bounded
+
+Treat chat as transport and the vault as memory. Use one Codex task for one
+bounded activity session, not for the lifetime of a collection.
+
+- Read each required skill resource at most once per assistant turn. Context
+  compaction inside that turn does not restart setup. Do not reread complete
+  skill files, enumerate tool catalogs, or repeat completed discovery merely
+  because earlier tool output left the visible context.
+- Treat the first context compaction in a task as a rollover signal. Finish or
+  verify only the already accepted capture, report its capture ID and actual
+  processing state, then tell the user to continue in a fresh task rooted at
+  the same vault. Do not fork the saturated task because a fork retains its
+  completed history. Do not create a replacement task unless the user asks.
+- If persistence is still uncertain after compaction, use the candidate-ID
+  retry or exact-match search above once. If a second context compaction occurs
+  in the same assistant turn, stop all interpretation, reconciliation, media
+  processing, tool discovery, and further retries. Perform at most one minimal
+  candidate-ID existence check, report `captured`, `existing-capture`, or
+  `unverified` truthfully, and return the rollover instruction.
+- Never describe a bridge, shell, or helper as failed unless an actual tool
+  result establishes that failure. Lost working context is not a tool error.
+- If the user submits another deliberate input before following the rollover
+  instruction, capture it first under these same bounds, then repeat the
+  rollover instruction. Never use task saturation to leave an accepted input
+  only in chat.
+
+A fresh task resumes from durable files and minimum recent evidence. It does
+not require the old task, a fork, or a chat summary as authority.
 
 ## Start or resume a task
 
