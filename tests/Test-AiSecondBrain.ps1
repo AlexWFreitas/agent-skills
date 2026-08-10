@@ -196,6 +196,14 @@ $prefix = $ToolArguments[$outputIndex + 1]
 [IO.File]::WriteAllText("$prefix.srt", "1`r`n00:00:00,000 --> 00:00:01,000`r`nspoken words`r`n")
 '@
     [IO.File]::WriteAllBytes($model, [byte[]](10, 11, 12))
+    $runtimeRecord = Join-Path $vault 'collections\test-subject\contexts\main\inbox\media-processing\processing-runtime.md'
+    Set-Content -LiteralPath $runtimeRecord -Encoding UTF8 -Value @"
+# Local video-processing runtime
+
+- Install/use authorization: ``granted``
+- Extracted executable: ``$whisper``
+- Model path: ``$model``
+"@
 
     $missingTranscriberFailed = $false
     try {
@@ -214,9 +222,7 @@ $prefix = $ToolArguments[$outputIndex + 1]
         -VaultPath $vault `
         -CaptureId $capture.CaptureId `
         -FfmpegPath $ffmpeg `
-        -FfprobePath $ffprobe `
-        -WhisperPath $whisper `
-        -WhisperModelPath $model
+        -FfprobePath $ffprobe
 
     Assert-Equal 'media-ready' $result.State 'Video processing did not report ready media.'
     Assert-Equal 2 $result.FrameCount 'Prepared frame count was not reported.'
@@ -229,6 +235,22 @@ $prefix = $ToolArguments[$outputIndex + 1]
     Assert-Equal 1 $manifest.audio_stream_count 'Manifest lost stream metadata.'
     Assert-True ($manifest.source_attachment -match '^\.\./\.\./\.\./attachments/') 'Manifest source path does not reach the immutable attachment.'
     Assert-True (Test-Path -LiteralPath $capture.AttachmentPath -PathType Leaf) 'Processing changed the immutable attachment.'
+}
+
+Invoke-Test 'second brain video defaults to same-turn interpretation and durable Whisper reuse' {
+    $skill = Get-Content -Raw $skillPath
+    $scenarios = Get-Content -Raw $validationScenariosPath
+
+    Assert-True ($skill.Contains('treat an attached video as a request to capture, process,')) `
+        'Skill does not default an attached video to capture, processing, and interpretation.'
+    Assert-True ($skill.Contains('Do not ask an')) `
+        'Skill does not prohibit an extra intent question for an uncaptioned video.'
+    Assert-True ($skill.Contains('continue interpretation in the same assistant turn')) `
+        'Skill does not continue already-authorized dependency recovery in the same turn.'
+    Assert-True ($skill.Contains('the helper reuses the active vault runtime record')) `
+        'Skill does not route Whisper reuse through durable or stable discovery.'
+    Assert-True ($scenarios.Contains('## V20 — Durable Whisper reuse outside PATH')) `
+        'Validation scenarios do not exercise durable Whisper reuse outside PATH.'
 }
 
 Invoke-Test 'second brain capture retry with an existing capture id does not duplicate evidence' {

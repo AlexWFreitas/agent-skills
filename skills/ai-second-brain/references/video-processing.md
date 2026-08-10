@@ -17,13 +17,52 @@ separate skill or MCP service:
 
 Ordinary video processing must not require an API key, hosted transcription
 service, plugin allowance, metered account, or network request. Tool and model
-installation may require a one-time explicit user-approved download. Do not
-silently download or install them while processing a capture.
+installation requires user authorization. Persist that decision in the active
+context's runtime record so a later task can reuse or repair the same local
+dependency without asking again. Do not download or install without
+current-turn or durable recorded authorization.
 
 Use a multilingual Whisper model unless the user explicitly chooses an
 English-only model. `base` is a compact default; `small` is the preferred
 accuracy upgrade when local processing time and roughly 466 MiB of model disk
 are acceptable. Model choice affects accuracy, so record it when known.
+
+## Discover and reuse the local runtime
+
+Do not equate "not on `PATH`" with "not installed." Before reporting Whisper
+as unavailable, use this bounded order:
+
+1. explicit `-WhisperPath` and `-WhisperModelPath` overrides, when supplied;
+2. `inbox/media-processing/processing-runtime.md` in the active context;
+3. the stable per-user Codex location `.codex/local-tools/whisper.cpp`, where
+   the helper searches versioned `whisper-cli.exe` files and multilingual
+   models under `models/`;
+4. `whisper-cli` on `PATH` for the executable.
+
+`Process-SecondBrainVideo.ps1` performs this discovery when path overrides are
+omitted. An explicit invalid override fails rather than silently selecting a
+different binary. The runtime record may contain other audit prose, but these
+machine-readable Markdown fields enable deterministic reuse:
+
+```markdown
+- Install/use authorization: `granted`
+- Extracted executable: `C:\absolute\path\to\whisper-cli.exe`
+- Model path: `C:\absolute\path\to\ggml-small.bin`
+```
+
+A prior record that names the user's authorization, executable, and model is
+durable permission to use and, when necessary, repair that same offline setup
+for this vault unless revoked. Read-only checks of the record and bounded local
+tool directory are normal processing; do not ask for permission merely to look
+there. A platform-level sandbox approval may still be required for the actual
+command, but request it immediately and continue rather than returning a
+manual permission question.
+
+If discovery finds no working setup and installation has already been
+authorized, install to the stable per-user location, not a temporary folder;
+record the official source, version, paths, model, and hashes; rerun the
+processor; and continue interpreting the video in the same assistant turn.
+Never download a duplicate before checking the recorded and stable paths.
 
 ## Prepare derived evidence
 
@@ -52,10 +91,10 @@ audio-transcript.json     # only when audio exists
 audio-transcript.srt      # only when audio exists
 ```
 
-If the attachment is pending, a required tool/model is missing, extraction
-fails, or an audio stream cannot be transcribed, append `blocked`. Never call
-the interpretation complete or replace the missing channel with latent
-knowledge.
+If the attachment is pending, a required tool/model remains missing after
+bounded discovery and any authorized repair, extraction fails, or an audio
+stream cannot be transcribed, append `blocked`. Never call the interpretation
+complete or replace the missing channel with latent knowledge.
 
 ## Review visual coverage
 

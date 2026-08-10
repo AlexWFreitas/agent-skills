@@ -35,7 +35,13 @@ $ErrorActionPreference = 'Stop'
 $script:Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 function Resolve-Executable {
-    param([string]$ExplicitPath, [string]$CommandName, [string]$Purpose)
+    param(
+        [string]$ExplicitPath,
+        [string]$CommandName,
+        [string]$Purpose,
+        [string[]]$CandidatePaths = @(),
+        [string]$SearchDescription = 'PATH'
+    )
 
     if ($ExplicitPath) {
         if (-not [IO.Path]::IsPathRooted($ExplicitPath)) {
@@ -48,12 +54,99 @@ function Resolve-Executable {
         return $resolved
     }
 
+    foreach ($candidatePath in @($CandidatePaths)) {
+        if (-not $candidatePath -or -not [IO.Path]::IsPathRooted($candidatePath)) { continue }
+        $resolvedCandidate = [IO.Path]::GetFullPath($candidatePath)
+        if (Test-Path -LiteralPath $resolvedCandidate -PathType Leaf) {
+            return $resolvedCandidate
+        }
+    }
+
     $command = Get-Command $CommandName -CommandType Application -ErrorAction SilentlyContinue |
         Select-Object -First 1
     if (-not $command) {
-        throw "$Purpose is required but '$CommandName' was not found."
+        throw "$Purpose is required but '$CommandName' was not found after checking $SearchDescription."
     }
     return $command.Source
+}
+
+function Resolve-RequiredFile {
+    param(
+        [string]$ExplicitPath,
+        [string]$Purpose,
+        [string[]]$CandidatePaths = @(),
+        [string]$SearchDescription
+    )
+
+    if ($ExplicitPath) {
+        if (-not [IO.Path]::IsPathRooted($ExplicitPath)) {
+            throw "$Purpose path must be absolute."
+        }
+        $resolved = [IO.Path]::GetFullPath($ExplicitPath)
+        if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
+            throw "$Purpose does not exist: $resolved"
+        }
+        return $resolved
+    }
+
+    foreach ($candidatePath in @($CandidatePaths)) {
+        if (-not $candidatePath -or -not [IO.Path]::IsPathRooted($candidatePath)) { continue }
+        $resolvedCandidate = [IO.Path]::GetFullPath($candidatePath)
+        if (Test-Path -LiteralPath $resolvedCandidate -PathType Leaf) {
+            return $resolvedCandidate
+        }
+    }
+
+    throw "$Purpose is required but no readable file was found after checking $SearchDescription."
+}
+
+function Get-RecordedRuntimePath {
+    param([string]$RecordPath, [string]$Label)
+
+    if (-not (Test-Path -LiteralPath $RecordPath -PathType Leaf)) { return $null }
+    $record = Get-Content -LiteralPath $RecordPath -Raw
+    $pattern = '(?im)^\s*-\s*' + [regex]::Escape($Label) + ':\s*`([^`]+)`'
+    $match = [regex]::Match($record, $pattern)
+    if (-not $match.Success) { return $null }
+
+    $candidatePath = $match.Groups[1].Value.Trim()
+    if (-not [IO.Path]::IsPathRooted($candidatePath)) { return $null }
+    return [IO.Path]::GetFullPath($candidatePath)
+}
+
+function Get-StableWhisperRoot {
+    $userProfilePath = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
+    if (-not $userProfilePath) { return $null }
+    return Join-Path $userProfilePath '.codex\local-tools\whisper.cpp'
+}
+
+function Find-StableWhisperExecutable {
+    param([string]$WhisperRoot)
+
+    if (-not $WhisperRoot -or -not (Test-Path -LiteralPath $WhisperRoot -PathType Container)) {
+        return $null
+    }
+    $candidate = Get-ChildItem -LiteralPath $WhisperRoot -Recurse -Filter 'whisper-cli.exe' -File `
+        -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '[\\/]_download[\\/]' } |
+        Sort-Object @{ Expression = { $_.LastWriteTimeUtc }; Descending = $true }, FullName |
+        Select-Object -First 1
+    if ($candidate) { return $candidate.FullName }
+    return $null
+}
+
+function Find-StableWhisperModel {
+    param([string]$WhisperRoot)
+
+    if (-not $WhisperRoot) { return $null }
+    $modelRoot = Join-Path $WhisperRoot 'models'
+    foreach ($modelName in @('ggml-small.bin', 'ggml-base.bin', 'ggml-medium.bin', 'ggml-tiny.bin')) {
+        $candidatePath = Join-Path $modelRoot $modelName
+        if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+            return [IO.Path]::GetFullPath($candidatePath)
+        }
+    }
+    return $null
 }
 
 function Write-Utf8File {
@@ -147,17 +240,31 @@ if ($duration -gt 0 -and [Math]::Ceiling($duration / $effectiveInterval) -gt $Ma
 $whisper = $null
 $model = $null
 if ($audioStreams.Count -gt 0) {
-    $whisper = Resolve-Executable -ExplicitPath $WhisperPath -CommandName 'whisper-cli' -Purpose 'whisper.cpp'
-    if (-not $WhisperModelPath) {
-        throw 'WhisperModelPath is required when the video contains audio.'
-    }
-    if (-not [IO.Path]::IsPathRooted($WhisperModelPath)) {
-        throw 'WhisperModelPath must be absolute.'
-    }
-    $model = [IO.Path]::GetFullPath($WhisperModelPath)
-    if (-not (Test-Path -LiteralPath $model -PathType Leaf)) {
-        throw "Whisper model does not exist: $model"
-    }
+    $mediaRoot = Join-Path $contextRoot 'inbox\media-processing'
+    $runtimeRecordPath = Join-Path $mediaRoot 'processing-runtime.md'
+    $stableWhisperRoot = Get-StableWhisperRoot
+    $recordedWhisperPath = Get-RecordedRuntimePath `
+        -RecordPath $runtimeRecordPath `
+        -Label 'Extracted executable'
+    $recordedModelPath = Get-RecordedRuntimePath `
+        -RecordPath $runtimeRecordPath `
+        -Label 'Model path'
+    $stableWhisperPath = Find-StableWhisperExecutable -WhisperRoot $stableWhisperRoot
+    $stableModelPath = Find-StableWhisperModel -WhisperRoot $stableWhisperRoot
+    $runtimeSearchDescription = "the active vault runtime record, the stable Codex local-tools directory, and PATH"
+    $modelSearchDescription = "the active vault runtime record and the stable Codex local-tools directory"
+
+    $whisper = Resolve-Executable `
+        -ExplicitPath $WhisperPath `
+        -CommandName 'whisper-cli' `
+        -Purpose 'whisper.cpp' `
+        -CandidatePaths @($recordedWhisperPath, $stableWhisperPath) `
+        -SearchDescription $runtimeSearchDescription
+    $model = Resolve-RequiredFile `
+        -ExplicitPath $WhisperModelPath `
+        -Purpose 'Whisper model' `
+        -CandidatePaths @($recordedModelPath, $stableModelPath) `
+        -SearchDescription $modelSearchDescription
 }
 
 $mediaRoot = Join-Path $contextRoot 'inbox\media-processing'

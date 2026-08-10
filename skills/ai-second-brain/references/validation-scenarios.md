@@ -162,8 +162,8 @@ quota.
 
 ## V16 — Video with visual text and spoken words
 
-Input: a short synthetic video containing changing onscreen messages, spoken
-words, and a non-speech sound.
+Input: an uncaptioned short synthetic video containing changing onscreen
+messages, spoken words, and a non-speech sound.
 
 Pass:
 
@@ -174,6 +174,8 @@ Pass:
 - the combined timeline interprets both channels without erasing provenance;
 - non-speech audio, AI inference, uncertainty, and sampling limitations remain
   distinct;
+- the initial response interprets and extracts the video without asking what
+  operation the user wants or requiring a second "interpret it" message;
 - no hosted transcription or model API is called.
 
 ## V17 — Video without audio and video blocked on missing transcription
@@ -183,7 +185,8 @@ Pass:
 - a video with no audio records `no-audio` and is not forced through speech
   transcription;
 - a video with audio cannot reach `interpreted` while whisper.cpp or its model
-  is missing;
+  remains genuinely missing after durable-record/stable-location discovery and
+  any already-authorized installation or repair;
 - failure does not change the immutable capture or attachment.
 
 ## V18 — Structured user-input boundaries
@@ -223,3 +226,20 @@ Pass:
 - the user is told to continue in a fresh task rooted at the same vault, not a
   fork of the saturated task;
 - the fresh task resumes from durable state without requiring the old chat.
+
+## V20 — Durable Whisper reuse outside PATH
+
+In an isolated fixture, keep `whisper-cli` off `PATH`, write an active-context
+`processing-runtime.md` that records prior install/use authorization plus valid
+absolute executable/model paths, and process an audio-bearing video without
+passing either Whisper path argument.
+
+Pass:
+
+- the processor reuses the recorded executable and multilingual model;
+- no dependency download, reinstall, permission question, or extra user turn
+  occurs;
+- an explicit nonexistent Whisper override still fails instead of silently
+  falling back;
+- genuinely stale recorded paths continue to bounded stable-location and
+  `PATH` discovery before the runtime is called missing.

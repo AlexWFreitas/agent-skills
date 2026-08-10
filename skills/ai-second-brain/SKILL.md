@@ -137,6 +137,21 @@ or interpret the input.
 If pending media is later saved locally, run the matching completion helper
 with the original capture ID. Do not rewrite its capture Markdown.
 
+### Default attached-video intent
+
+In an active vault, treat an attached video as a request to capture, process,
+interpret, and extract durable information unless the user explicitly asks to
+store it without interpretation. A caption is optional. Do not ask an
+uncaptioned-video sender what operation they want and do not make them send a
+second message such as "interpret it."
+
+After capture succeeds and a durable attachment is available, continue video
+preparation, interpretation, any immediately justified current-state update,
+and the substantive answer in the same assistant turn. The first reply to the
+video should contain the interpretation or a truthful technical limitation,
+not only a capture acknowledgement. A genuine `pending-save-first` attachment
+still requires the user to make the media locally readable.
+
 ## Keep the Codex task bounded
 
 Treat chat as transport and the vault as memory. Use one Codex task for one
@@ -200,16 +215,32 @@ Use only the active context and the captured evidence.
   pending.
 - For a video with durable media, run
   [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
-  before interpretation. Do not substitute a hosted transcription service.
+  before interpretation. Omit Whisper path arguments when no override is
+  needed; the helper reuses the active vault runtime record, the stable Codex
+  local-tools installation, or `PATH`. Do not substitute a hosted
+  transcription service.
 - Interpret the prepared video using the required separate visual, onscreen
   text, audible speech, non-speech audio, combined timeline, inference, and
   unresolved layers in
   [references/video-processing.md](references/video-processing.md). Treat the
   offline speech transcript as fallible derived evidence, not as the user's
   direct statement.
-- If a video is pending save-first, or contains audio but the local
-  transcription runtime/model is unavailable, append `blocked` and do not
-  claim complete interpretation.
+- Before declaring the local transcription runtime/model unavailable, inspect
+  the durable runtime record and the bounded stable local-tools location. This
+  read-only discovery is ordinary processing and does not require a separate
+  permission turn. A prior vault record that explicitly grants install/use
+  permission remains authorization to reuse or repair that same local runtime
+  and model unless the user revokes it.
+- If installation or repair is already authorized, perform it in a stable
+  local-tools directory, persist or refresh the runtime record, retry media
+  processing, and continue interpretation in the same assistant turn. Do not
+  redownload a working runtime/model or ask again for authorization already
+  recorded in the vault or supplied in the conversation.
+- Only if a video is pending save-first, or contains audio but the local
+  transcription runtime/model remains genuinely unavailable after bounded
+  discovery and any authorized repair, append `blocked` and do not claim
+  complete interpretation. Report the exact checked locations or failed tool
+  action; never describe an unperformed search as a permission problem.
 - Append an `interpreted`, `blocked`, or `conflicted` event through
   [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1).
 - Do not rewrite the immutable capture or completed attachment.
