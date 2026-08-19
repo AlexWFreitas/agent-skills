@@ -11,8 +11,10 @@ Treat the directory containing this file as the vault root.
 
 - After Codex accepts deliberate evidence, a question, correction, decision,
   hypothesis, open item, screenshot, video, or dictated transcript, persist the
-  complete input to the active context's immutable inbox as the first agent
-  action. Interpret or answer it only after persistence succeeds. Pure
+  complete input to the active context's immutable evidence backend as the
+  first agent action (`_evidence` in layout version 2, or the intact `inbox` in
+  an unmigrated legacy context). Interpret or answer it only after persistence
+  succeeds. Pure
   initialization, context-selection, authorization, archive-confirmation, and
   deletion-confirmation commands are control inputs.
 - Default to firsthand-only mode. Behave as though facts absent from the active
@@ -36,6 +38,30 @@ Treat the directory containing this file as the vault root.
   and apply capture-first routing to the returned answer.
 - Do not add a hosted service, model API, plugin, connector, or database.
 
+## Human-facing organization
+
+- Treat `README.md`, `guide/`, `journal/`, and `open-questions.md` as the
+  notebook people read. Treat `_evidence/` as the audit and processing backend.
+- In an unmigrated legacy context, keep using its existing paths until the
+  migration helper is authorized. Never create a partial mix of `inbox` and
+  `_evidence`.
+- Keep `README.md` short and navigational. Put a subject in one canonical guide
+  note and link to it instead of repeating the same paragraph in several files.
+- Use natural filenames and headings. Never require a person to know a capture
+  ID to find an item, character, place, puzzle, decision, or event.
+- Put clickable, human-labeled source links at the end of the section they
+  support. Keep capture IDs out of ordinary prose unless the user asks for the
+  evidence chain.
+- In an Obsidian collection, use native vault-relative `[[path|label]]` links
+  and `![[path|label]]` media embeds consistently. Use relative Markdown links
+  in a client-neutral vault.
+- Keep `_evidence/` visible as the clearly named backend unless the user asks
+  to hide or exclude it.
+- Write journal entries as meaningful sessions or chapters, not one line per
+  capture. Keep only useful unresolved work in `open-questions.md`; move
+  resolved or scope-closed material to its canonical guide or journal note.
+
 At the start of a fresh task, read `second-brain.md`, announce the active
 collection/context, and stop for clarification when selection is ambiguous.
-Read only the minimum active-context files needed for the current action.
+Read only the minimum active-context human notes and `_evidence` records needed
+for the current action.

@@ -164,6 +164,21 @@ function Invoke-CheckedTool {
     }
 }
 
+function Resolve-EvidenceRoot {
+    param([Parameter(Mandatory = $true)][string]$ContextRoot)
+
+    $humanFirstRoot = Join-Path $ContextRoot '_evidence'
+    $legacyRoot = Join-Path $ContextRoot 'inbox'
+    $hasHumanFirst = Test-Path -LiteralPath $humanFirstRoot -PathType Container
+    $hasLegacy = Test-Path -LiteralPath $legacyRoot -PathType Container
+    if ($hasHumanFirst -and $hasLegacy) {
+        throw "Active context has both '_evidence' and legacy 'inbox' backends. Refusing an ambiguous write."
+    }
+    if ($hasHumanFirst) { return $humanFirstRoot }
+    if ($hasLegacy) { return $legacyRoot }
+    throw "Active context has no evidence backend: $ContextRoot"
+}
+
 if (-not [IO.Path]::IsPathRooted($VaultPath)) {
     throw 'VaultPath must be an absolute path.'
 }
@@ -185,12 +200,13 @@ if (-not $ContextSlug) {
 }
 
 $contextRoot = Join-Path $vaultRoot "collections\$CollectionSlug\contexts\$ContextSlug"
+$evidenceRoot = Resolve-EvidenceRoot -ContextRoot $contextRoot
 $captureDate = $CaptureId.Substring(4, 8)
 $dateDirectory = '{0}-{1}-{2}' -f
     $captureDate.Substring(0, 4),
     $captureDate.Substring(4, 2),
     $captureDate.Substring(6, 2)
-$capturePath = Join-Path $contextRoot "inbox\captures\$dateDirectory\$CaptureId.md"
+$capturePath = Join-Path $evidenceRoot "captures\$dateDirectory\$CaptureId.md"
 if (-not (Test-Path -LiteralPath $capturePath -PathType Leaf)) {
     throw "Capture '$CaptureId' does not exist in the selected context."
 }
@@ -240,7 +256,7 @@ if ($duration -gt 0 -and [Math]::Ceiling($duration / $effectiveInterval) -gt $Ma
 $whisper = $null
 $model = $null
 if ($audioStreams.Count -gt 0) {
-    $mediaRoot = Join-Path $contextRoot 'inbox\media-processing'
+    $mediaRoot = Join-Path $evidenceRoot 'media-processing'
     $runtimeRecordPath = Join-Path $mediaRoot 'processing-runtime.md'
     $stableWhisperRoot = Get-StableWhisperRoot
     $recordedWhisperPath = Get-RecordedRuntimePath `
@@ -267,7 +283,7 @@ if ($audioStreams.Count -gt 0) {
         -SearchDescription $modelSearchDescription
 }
 
-$mediaRoot = Join-Path $contextRoot 'inbox\media-processing'
+$mediaRoot = Join-Path $evidenceRoot 'media-processing'
 if (-not (Test-Path -LiteralPath $mediaRoot)) {
     [void](New-Item -ItemType Directory -Path $mediaRoot)
 }
@@ -361,11 +377,12 @@ catch {
 }
 
 $eventScript = Join-Path $PSScriptRoot 'Add-SecondBrainProcessingEvent.ps1'
+$evidenceDirectoryName = Split-Path -Leaf $evidenceRoot
 $eventDetail = if ($audioStreams.Count -gt 0) {
-    "video frames and offline audio transcript prepared at collections/$CollectionSlug/contexts/$ContextSlug/inbox/media-processing/$CaptureId"
+    "video frames and offline audio transcript prepared at collections/$CollectionSlug/contexts/$ContextSlug/$evidenceDirectoryName/media-processing/$CaptureId"
 }
 else {
-    "video frames prepared; source has no audio stream; derivatives at collections/$CollectionSlug/contexts/$ContextSlug/inbox/media-processing/$CaptureId"
+    "video frames prepared; source has no audio stream; derivatives at collections/$CollectionSlug/contexts/$ContextSlug/$evidenceDirectoryName/media-processing/$CaptureId"
 }
 [void](& $eventScript `
     -VaultPath $vaultRoot `

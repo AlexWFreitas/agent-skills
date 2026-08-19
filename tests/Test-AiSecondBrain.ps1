@@ -4,6 +4,7 @@ $completeScreenshotScript = Join-Path $repositoryRoot 'skills\ai-second-brain\sc
 $completeVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Complete-SecondBrainVideo.ps1'
 $processVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Process-SecondBrainVideo.ps1'
 $processingEventScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainProcessingEvent.ps1'
+$migrationScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Migrate-SecondBrainHumanLayout.ps1'
 $skillPath = Join-Path $repositoryRoot 'skills\ai-second-brain\SKILL.md'
 $validationScenariosPath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\validation-scenarios.md'
 
@@ -30,14 +31,15 @@ Invoke-Test 'second brain initializer creates the portable context contract' {
     foreach ($path in @(
         (Join-Path $vault 'AGENTS.md'),
         (Join-Path $vault 'second-brain.md'),
-        (Join-Path $context 'context.md'),
-        (Join-Path $context 'timeline.md'),
-        (Join-Path $context 'open-items.md'),
-        (Join-Path $context 'inbox\captures'),
-        (Join-Path $context 'inbox\interpretations'),
-        (Join-Path $context 'inbox\media-processing'),
-        (Join-Path $context 'inbox\processing-events.jsonl'),
-        (Join-Path $context 'topics'),
+        (Join-Path $context 'README.md'),
+        (Join-Path $context 'guide\index.md'),
+        (Join-Path $context 'journal\index.md'),
+        (Join-Path $context 'open-questions.md'),
+        (Join-Path $context '_evidence\state.md'),
+        (Join-Path $context '_evidence\captures'),
+        (Join-Path $context '_evidence\interpretations'),
+        (Join-Path $context '_evidence\media-processing'),
+        (Join-Path $context '_evidence\processing-events.jsonl'),
         (Join-Path $context 'attachments'),
         (Join-Path $context 'external')
     )) {
@@ -45,9 +47,41 @@ Invoke-Test 'second brain initializer creates the portable context contract' {
     }
 
     $allText = (Get-Content -Raw (Join-Path $vault 'second-brain.md')) +
-        (Get-Content -Raw (Join-Path $context 'context.md'))
+        (Get-Content -Raw (Join-Path $context 'README.md')) +
+        (Get-Content -Raw (Join-Path $context '_evidence\state.md'))
     Assert-False ($allText -match '\{\{[A-Z_]+\}\}') 'Initializer left an unresolved template token.'
     Assert-True ($allText -match 'test-subject') 'Initializer did not write the collection slug.'
+    Assert-True ($allText -match 'Raw\s+captures.*_evidence' -or $allText -match '_evidence.*backend') `
+        'Initializer did not explain the human/evidence boundary.'
+    Assert-True ($allText.Contains('Link style: `markdown`')) `
+        'Client-neutral initialization did not select portable Markdown links.'
+    Assert-True ($allText.Contains('[Guide](guide/index.md)')) `
+        'Client-neutral initialization did not create a relative Markdown guide link.'
+}
+
+Invoke-Test 'second brain initializer uses native links for an Obsidian collection' {
+    $vault = Join-Path $script:TemporaryRoot 'second-brain-obsidian-init'
+    $collection = Join-Path $vault 'collections\test-subject'
+    [void](New-Item -ItemType Directory -Path (Join-Path $collection '.obsidian') -Force)
+
+    $result = & $initializeScript `
+        -VaultPath $vault `
+        -CollectionName 'Test Subject' `
+        -CollectionSlug 'test-subject' `
+        -ActivityTemplate 'game-playthrough'
+    Assert-Equal 'obsidian' $result.LinkStyle 'Initializer did not auto-detect the Obsidian collection.'
+
+    $context = Join-Path $collection 'contexts\main'
+    $homeContent = Get-Content -LiteralPath (Join-Path $context 'README.md') -Raw
+    $state = Get-Content -LiteralPath (Join-Path $context '_evidence\state.md') -Raw
+    Assert-True ($homeContent.Contains('[[contexts/main/guide/index|Guide]]')) `
+        'Obsidian home did not use a native vault-relative guide link.'
+    Assert-True ($homeContent.Contains('[[contexts/main/open-questions|Open questions]]')) `
+        'Obsidian home did not use a native vault-relative open-questions link.'
+    Assert-False ($homeContent.Contains('[Guide](guide/index.md)')) `
+        'Obsidian home mixed portable Markdown and native internal links.'
+    Assert-True ($state.Contains('Link style: `obsidian`')) `
+        'Obsidian link style was not persisted in machine state.'
 }
 
 Invoke-Test 'second brain initializer is compatible on exact re-entry and refuses collisions' {
@@ -86,7 +120,7 @@ Invoke-Test 'second brain text and voice captures are immutable transcript evide
     Assert-True ($voiceEvidence.Contains('Corrected spoken note.')) 'Corrected transcript was not preserved.'
     Assert-False ($voiceEvidence -match '\.(wav|mp3|m4a)') 'Voice evidence unexpectedly references raw audio.'
 
-    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\inbox\processing-events.jsonl')
+    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\_evidence\processing-events.jsonl')
     Assert-Equal 2 @($ledger).Count 'Each capture did not append exactly one processing event.'
 }
 
@@ -121,7 +155,7 @@ Invoke-Test 'second brain screenshot capture copies local evidence or remains vi
     Assert-Equal 'attachment-ready' $completed.State 'Save-first screenshot was not completed.'
     Assert-True (Test-Path -LiteralPath $completed.AttachmentPath -PathType Leaf) 'Completed screenshot was not copied.'
 
-    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\inbox\processing-events.jsonl')
+    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\_evidence\processing-events.jsonl')
     $completionEvents = @($ledger | Where-Object { $_ -match [regex]::Escape($pending.CaptureId) })
     Assert-Equal 2 $completionEvents.Count 'Pending screenshot did not retain capture and completion events.'
 }
@@ -196,7 +230,7 @@ $prefix = $ToolArguments[$outputIndex + 1]
 [IO.File]::WriteAllText("$prefix.srt", "1`r`n00:00:00,000 --> 00:00:01,000`r`nspoken words`r`n")
 '@
     [IO.File]::WriteAllBytes($model, [byte[]](10, 11, 12))
-    $runtimeRecord = Join-Path $vault 'collections\test-subject\contexts\main\inbox\media-processing\processing-runtime.md'
+    $runtimeRecord = Join-Path $vault 'collections\test-subject\contexts\main\_evidence\media-processing\processing-runtime.md'
     Set-Content -LiteralPath $runtimeRecord -Encoding UTF8 -Value @"
 # Local video-processing runtime
 
@@ -253,6 +287,26 @@ Invoke-Test 'second brain video defaults to same-turn interpretation and durable
         'Validation scenarios do not exercise durable Whisper reuse outside PATH.'
 }
 
+Invoke-Test 'second brain skill requires a human-first notebook over the evidence backend' {
+    $skill = Get-Content -Raw $skillPath
+    $scenarios = Get-Content -Raw $validationScenariosPath
+
+    Assert-True ($skill.Contains('Choose one canonical guide note for each durable subject.')) `
+        'Skill does not require one canonical human home per subject.'
+    Assert-True ($skill.Contains('human-labeled, clickable evidence links')) `
+        'Skill does not require readable section-level provenance.'
+    Assert-True ($skill -match 'Unknown\s+trivia\s+is\s+not\s+automatically\s+a\s+task') `
+        'Skill still promotes every unknown detail into an active question.'
+    Assert-True ($skill.Contains('Search `README.md`, `guide/`, and `journal/` first.')) `
+        'Skill does not route ordinary retrieval through the human surface.'
+    Assert-True ($skill.Contains('use vault-relative `[[path|label]]` wikilinks')) `
+        'Skill does not require native links for Obsidian collections.'
+    Assert-True ($skill.Contains('Do not hide it or')) `
+        'Skill hides the evidence backend without explicit user direction.'
+    Assert-True ($scenarios.Contains('## V21 — Human-first layout and legacy migration')) `
+        'Validation scenarios do not exercise human-first migration and retrieval.'
+}
+
 Invoke-Test 'second brain capture retry with an existing capture id does not duplicate evidence' {
     $vault = New-SecondBrainFixture 'second-brain-retry'
     $captureId = 'CAP-20260726-170000-abcd'
@@ -261,9 +315,9 @@ Invoke-Test 'second brain capture retry with an existing capture id does not dup
     Assert-Equal 'captured' $first.State 'First explicit-ID capture failed.'
     Assert-Equal 'existing-capture' $second.State 'Retry did not detect existing capture.'
 
-    $captureFiles = Get-ChildItem -LiteralPath (Join-Path $vault 'collections\test-subject\contexts\main\inbox\captures') -Recurse -File
+    $captureFiles = Get-ChildItem -LiteralPath (Join-Path $vault 'collections\test-subject\contexts\main\_evidence\captures') -Recurse -File
     Assert-Equal 1 @($captureFiles).Count 'Retry created duplicate capture evidence.'
-    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\inbox\processing-events.jsonl')
+    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\_evidence\processing-events.jsonl')
     Assert-Equal 1 @($ledger).Count 'Retry duplicated the processing event.'
 }
 
@@ -301,8 +355,109 @@ Invoke-Test 'second brain processing events append without rewriting capture evi
     Assert-Equal 'interpreted' $event.State 'Processing event was not appended.'
     Assert-Equal $before (Get-Content -Raw $capture.CapturePath) 'Processing event rewrote immutable evidence.'
 
-    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\inbox\processing-events.jsonl')
+    $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\_evidence\processing-events.jsonl')
     Assert-Equal 2 @($ledger).Count 'Processing history did not remain append-only.'
+}
+
+Invoke-Test 'second brain migration separates the backend and preserves every legacy byte' {
+    $vault = New-SecondBrainFixture 'second-brain-human-layout-migration'
+    $context = Join-Path $vault 'collections\test-subject\contexts\main'
+    $evidence = Join-Path $context '_evidence'
+    $legacyInbox = Join-Path $context 'inbox'
+
+    Move-Item -LiteralPath $evidence -Destination $legacyInbox
+    Remove-Item -LiteralPath (Join-Path $legacyInbox 'state.md') -Force
+    Remove-Item -LiteralPath (Join-Path $context 'README.md') -Force
+    Remove-Item -LiteralPath (Join-Path $context 'open-questions.md') -Force
+    Remove-Item -LiteralPath (Join-Path $context 'journal\index.md') -Force
+    Remove-Item -LiteralPath (Join-Path $context 'journal') -Force
+    Remove-Item -LiteralPath (Join-Path $context 'guide\index.md') -Force
+    Move-Item -LiteralPath (Join-Path $context 'guide') -Destination (Join-Path $context 'topics')
+
+    Set-Content -LiteralPath (Join-Path $context 'context.md') -Encoding UTF8 -Value @'
+# Context: Test Subject - Main Test
+
+Collection: `test-subject`
+Context: `main`
+Activity template: `game-playthrough`
+Lifecycle: `active`
+Epistemic mode: `firsthand-only`
+Created: `2026-08-16T10:00:00-03:00`
+Last updated: `2026-08-16T11:00:00-03:00`
+Latest checkpoint: `legacy checkpoint`
+
+## Scope
+
+Only supplied test evidence.
+
+## Current state
+
+- A legacy fact.
+'@
+    Set-Content -LiteralPath (Join-Path $context 'timeline.md') -Encoding UTF8 -Value "# Timeline`r`n`r`n- A legacy event."
+    Set-Content -LiteralPath (Join-Path $context 'open-items.md') -Encoding UTF8 -Value "# Open Items`r`n`r`n- A legacy question."
+    Set-Content -LiteralPath (Join-Path $context 'topics\mechanics.md') -Encoding UTF8 -Value "# Mechanics`r`n`r`nA useful legacy topic."
+    $rootIndexPath = Join-Path $vault 'second-brain.md'
+    $rootIndex = (Get-Content -LiteralPath $rootIndexPath -Raw).Replace('Schema version: `2`', 'Schema version: `1`')
+    [IO.File]::WriteAllText($rootIndexPath, $rootIndex)
+    [void](New-Item -ItemType Directory -Path (Join-Path $vault 'collections\test-subject\.obsidian'))
+
+    $imagePath = Join-Path $script:TemporaryRoot 'migration-image.png'
+    [IO.File]::WriteAllBytes($imagePath, [byte[]](0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a))
+    $capture = & $captureScript `
+        -VaultPath $vault `
+        -InputType screenshot `
+        -Content 'Legacy screenshot evidence.' `
+        -AttachmentPath $imagePath
+    $captureHash = (Get-FileHash -LiteralPath $capture.CapturePath -Algorithm SHA256).Hash
+    $attachmentHash = (Get-FileHash -LiteralPath $capture.AttachmentPath -Algorithm SHA256).Hash
+
+    $result = & $migrationScript -VaultPath $vault -Confirm:$false
+    Assert-Equal 'migrated-human-layout' $result.State 'Legacy migration did not report success.'
+    Assert-Equal 'obsidian' $result.LinkStyle 'Migration did not auto-detect the Obsidian collection.'
+    foreach ($path in @(
+        (Join-Path $context 'README.md'),
+        (Join-Path $context 'guide\index.md'),
+        (Join-Path $context 'guide\mechanics.md'),
+        (Join-Path $context 'journal\index.md'),
+        (Join-Path $context 'open-questions.md'),
+        (Join-Path $context '_evidence\state.md'),
+        (Join-Path $context '_evidence\legacy-synthesis\context.md'),
+        (Join-Path $context '_evidence\legacy-synthesis\timeline.md'),
+        (Join-Path $context '_evidence\legacy-synthesis\open-items.md'),
+        (Join-Path $context '_evidence\migration-manifest.json')
+    )) {
+        Assert-True (Test-Path -LiteralPath $path -PathType Leaf) "Migration did not create or preserve '$path'."
+    }
+    foreach ($legacyPath in @(
+        (Join-Path $context 'inbox'),
+        (Join-Path $context 'context.md'),
+        (Join-Path $context 'timeline.md'),
+        (Join-Path $context 'open-items.md'),
+        (Join-Path $context 'topics')
+    )) {
+        Assert-False (Test-Path -LiteralPath $legacyPath) "Legacy path remained mixed into the human surface: '$legacyPath'."
+    }
+
+    $migratedCapturePath = Join-Path $context "_evidence\captures\$($capture.CaptureId.Substring(4,4))-$($capture.CaptureId.Substring(8,2))-$($capture.CaptureId.Substring(10,2))\$($capture.CaptureId).md"
+    Assert-Equal $captureHash (Get-FileHash -LiteralPath $migratedCapturePath -Algorithm SHA256).Hash `
+        'Migration changed immutable capture bytes.'
+    Assert-Equal $attachmentHash (Get-FileHash -LiteralPath $capture.AttachmentPath -Algorithm SHA256).Hash `
+        'Migration changed immutable attachment bytes.'
+
+    $manifest = Get-Content -LiteralPath $result.ManifestPath -Raw | ConvertFrom-Json
+    Assert-True (@($manifest.preserved_files).Count -ge 5) 'Migration manifest did not account for preserved files.'
+    Assert-True (@($manifest.preserved_files | Where-Object { $_.category -eq 'attachment-unchanged' }).Count -eq 1) `
+        'Migration manifest did not account for the unchanged attachment.'
+    $migratedHome = Get-Content -LiteralPath (Join-Path $context 'README.md') -Raw
+    Assert-True ($migratedHome.Contains('[[contexts/main/guide/index|Guide]]')) `
+        'Migrated Obsidian home did not use native wikilinks.'
+
+    $afterMigration = & $captureScript -VaultPath $vault -InputType text -Content 'Captured after migration.'
+    Assert-True ($afterMigration.CapturePath -match '[\\/]_evidence[\\/]captures[\\/]') `
+        'Capture helper did not select the migrated evidence backend.'
+    $reentry = & $migrationScript -VaultPath $vault -Confirm:$false
+    Assert-Equal 'existing-compatible' $reentry.State 'Migration was not idempotent on exact re-entry.'
 }
 
 Invoke-Test 'second brain helpers resolve resources independently of current directory' {

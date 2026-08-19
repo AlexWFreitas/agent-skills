@@ -16,7 +16,10 @@ param(
 
     [string]$ContextScope,
 
-    [string]$ActivityTemplate = 'game-playthrough'
+    [string]$ActivityTemplate = 'game-playthrough',
+
+    [ValidateSet('auto', 'markdown', 'obsidian')]
+    [string]$LinkStyle = 'auto'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -80,8 +83,18 @@ if (-not $ContextScope) {
 
 $skillRoot = Split-Path -Parent $PSScriptRoot
 $assetRoot = Join-Path $skillRoot 'assets\vault'
-$contextRoot = Join-Path $vaultRoot "collections\$CollectionSlug\contexts\main"
+$collectionRoot = Join-Path $vaultRoot "collections\$CollectionSlug"
+$contextRoot = Join-Path $collectionRoot 'contexts\main'
 $timestamp = Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK'
+$resolvedLinkStyle = $LinkStyle.ToLowerInvariant()
+if ($resolvedLinkStyle -eq 'auto') {
+    $resolvedLinkStyle = if (Test-Path -LiteralPath (Join-Path $collectionRoot '.obsidian') -PathType Container) {
+        'obsidian'
+    }
+    else {
+        'markdown'
+    }
+}
 
 $directories = @(
     $vaultRoot,
@@ -89,11 +102,12 @@ $directories = @(
     (Join-Path $vaultRoot "collections\$CollectionSlug"),
     (Join-Path $vaultRoot "collections\$CollectionSlug\contexts"),
     $contextRoot,
-    (Join-Path $contextRoot 'inbox'),
-    (Join-Path $contextRoot 'inbox\captures'),
-    (Join-Path $contextRoot 'inbox\interpretations'),
-    (Join-Path $contextRoot 'inbox\media-processing'),
-    (Join-Path $contextRoot 'topics'),
+    (Join-Path $contextRoot 'guide'),
+    (Join-Path $contextRoot 'journal'),
+    (Join-Path $contextRoot '_evidence'),
+    (Join-Path $contextRoot '_evidence\captures'),
+    (Join-Path $contextRoot '_evidence\interpretations'),
+    (Join-Path $contextRoot '_evidence\media-processing'),
     (Join-Path $contextRoot 'attachments'),
     (Join-Path $contextRoot 'external')
 )
@@ -101,11 +115,13 @@ $directories = @(
 $templateFiles = @(
     @{ Source = (Join-Path $assetRoot 'AGENTS.md'); Target = (Join-Path $vaultRoot 'AGENTS.md') },
     @{ Source = (Join-Path $assetRoot 'second-brain.md'); Target = (Join-Path $vaultRoot 'second-brain.md') },
-    @{ Source = (Join-Path $assetRoot 'context.md'); Target = (Join-Path $contextRoot 'context.md') },
-    @{ Source = (Join-Path $assetRoot 'timeline.md'); Target = (Join-Path $contextRoot 'timeline.md') },
-    @{ Source = (Join-Path $assetRoot 'open-items.md'); Target = (Join-Path $contextRoot 'open-items.md') }
+    @{ Source = (Join-Path $assetRoot 'home.md'); Target = (Join-Path $contextRoot 'README.md') },
+    @{ Source = (Join-Path $assetRoot 'guide\index.md'); Target = (Join-Path $contextRoot 'guide\index.md') },
+    @{ Source = (Join-Path $assetRoot 'journal\index.md'); Target = (Join-Path $contextRoot 'journal\index.md') },
+    @{ Source = (Join-Path $assetRoot 'open-questions.md'); Target = (Join-Path $contextRoot 'open-questions.md') },
+    @{ Source = (Join-Path $assetRoot 'state.md'); Target = (Join-Path $contextRoot '_evidence\state.md') }
 )
-$ledgerPath = Join-Path $contextRoot 'inbox\processing-events.jsonl'
+$ledgerPath = Join-Path $contextRoot '_evidence\processing-events.jsonl'
 $allTargetFiles = @($templateFiles | ForEach-Object { $_.Target }) + @($ledgerPath)
 $existingTargets = @($allTargetFiles | Where-Object { Test-Path -LiteralPath $_ })
 
@@ -114,9 +130,9 @@ if ($existingTargets.Count -gt 0) {
     $compatible = $false
     if ($allExist) {
         $rootIndex = Get-Content -LiteralPath (Join-Path $vaultRoot 'second-brain.md') -Raw
-        $contextIndex = Get-Content -LiteralPath (Join-Path $contextRoot 'context.md') -Raw
+        $contextIndex = Get-Content -LiteralPath (Join-Path $contextRoot '_evidence\state.md') -Raw
         $compatible =
-            $rootIndex.Contains("Schema version: ``1``") -and
+            $rootIndex.Contains("Schema version: ``2``") -and
             $rootIndex.Contains("Active collection: ``$CollectionSlug``") -and
             $contextIndex.Contains("Collection: ``$CollectionSlug``") -and
             $contextIndex.Contains('Context: `main`')
@@ -148,9 +164,34 @@ try {
 
     $tokens = @{
         '{{VAULT_TITLE}}' = $VaultTitle
+        '{{COLLECTION_NAME}}' = $CollectionName
         '{{COLLECTION_SLUG}}' = $CollectionSlug
         '{{ACTIVITY_TEMPLATE}}' = $ActivityTemplate
         '{{TIMESTAMP}}' = $timestamp
+        '{{CREATED}}' = $timestamp
+        '{{LAST_UPDATED}}' = $timestamp
+        '{{LATEST_CHECKPOINT}}' = 'none'
+        '{{LIFECYCLE}}' = 'active'
+        '{{EPISTEMIC_MODE}}' = 'firsthand-only'
+        '{{LINK_STYLE}}' = $resolvedLinkStyle
+        '{{GUIDE_LINK}}' = if ($resolvedLinkStyle -eq 'obsidian') {
+            '[[contexts/main/guide/index|Guide]]'
+        }
+        else {
+            '[Guide](guide/index.md)'
+        }
+        '{{JOURNAL_LINK}}' = if ($resolvedLinkStyle -eq 'obsidian') {
+            '[[contexts/main/journal/index|Journal]]'
+        }
+        else {
+            '[Journal](journal/index.md)'
+        }
+        '{{OPEN_QUESTIONS_LINK}}' = if ($resolvedLinkStyle -eq 'obsidian') {
+            '[[contexts/main/open-questions|Open questions]]'
+        }
+        else {
+            '[Open questions](open-questions.md)'
+        }
         '{{CONTEXT_TITLE}}' = $ContextTitle
         '{{CONTEXT_SCOPE}}' = $ContextScope
     }
@@ -170,6 +211,7 @@ try {
         VaultPath = $vaultRoot
         Collection = $CollectionSlug
         Context = 'main'
+        LinkStyle = $resolvedLinkStyle
     }
 }
 catch {

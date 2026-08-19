@@ -73,6 +73,21 @@ function Add-Utf8Line {
     }
 }
 
+function Resolve-EvidenceRoot {
+    param([Parameter(Mandatory = $true)][string]$ContextRoot)
+
+    $humanFirstRoot = Join-Path $ContextRoot '_evidence'
+    $legacyRoot = Join-Path $ContextRoot 'inbox'
+    $hasHumanFirst = Test-Path -LiteralPath $humanFirstRoot -PathType Container
+    $hasLegacy = Test-Path -LiteralPath $legacyRoot -PathType Container
+    if ($hasHumanFirst -and $hasLegacy) {
+        throw "Active context has both '_evidence' and legacy 'inbox' backends. Refusing an ambiguous write."
+    }
+    if ($hasHumanFirst) { return $humanFirstRoot }
+    if ($hasLegacy) { return $legacyRoot }
+    throw "Active context has no evidence backend: $ContextRoot"
+}
+
 if (-not [IO.Path]::IsPathRooted($VaultPath)) {
     throw 'VaultPath must be an absolute path.'
 }
@@ -107,9 +122,10 @@ if ($InputType -notin @('screenshot', 'video') -and $AttachmentPath) {
 }
 
 $contextRoot = Join-Path $vaultRoot "collections\$CollectionSlug\contexts\$ContextSlug"
-$captureRoot = Join-Path $contextRoot 'inbox\captures'
+$evidenceRoot = Resolve-EvidenceRoot -ContextRoot $contextRoot
+$captureRoot = Join-Path $evidenceRoot 'captures'
 $attachmentRoot = Join-Path $contextRoot 'attachments'
-$ledgerPath = Join-Path $contextRoot 'inbox\processing-events.jsonl'
+$ledgerPath = Join-Path $evidenceRoot 'processing-events.jsonl'
 foreach ($requiredPath in @($captureRoot, $attachmentRoot, $ledgerPath)) {
     if (-not (Test-Path -LiteralPath $requiredPath)) {
         throw "Active context is incomplete; missing '$requiredPath'."

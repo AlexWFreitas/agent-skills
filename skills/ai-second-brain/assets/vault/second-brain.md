@@ -1,6 +1,7 @@
 # {{VAULT_TITLE}}
 
-Schema version: `1`  
+Schema version: `2`
+
 Active collection: `{{COLLECTION_SLUG}}`  
 Active context: `main`  
 Activity template: `{{ACTIVITY_TEMPLATE}}`  

@@ -72,8 +72,11 @@ checkpoint.
 
 Pass:
 
-- current state, timeline, open items, and justified topic notes agree;
-- every material claim links capture IDs;
+- the short home, canonical guide notes, readable journal, active open
+  questions, and machine state agree;
+- changed human sections end with descriptive clickable source links;
+- a subject has one canonical home instead of duplicated paragraphs;
+- resolved or irrelevant unknowns are absent from active questions;
 - captures remain unchanged;
 - processing events become reconciled or conflicted.
 
@@ -116,8 +119,8 @@ End with a checkpoint or task-rollover instruction, abandon chat history, and
 start a genuinely fresh Codex task in the same vault. Do not fork the old task.
 
 Pass: the assistant announces the active collection/context and resumes from
-durable state, open items, and minimum recent evidence without relying on the
-old chat.
+the human home, guide, active open questions, machine state, and minimum recent
+evidence without relying on the old chat.
 
 ## V11 — Context isolation
 
@@ -243,3 +246,30 @@ Pass:
   falling back;
 - genuinely stale recorded paths continue to bounded stable-location and
   `PATH` discovery before the runtime is called missing.
+
+## V21 — Human-first layout and legacy migration
+
+Populate an isolated legacy context with enough captures to justify several
+subjects, one screenshot attachment, resolved and irrelevant unknowns, and at
+least one existing topic note. Run the migration helper and reconcile.
+
+Pass:
+
+- capture, interpretation, processing-event, media, attachment, legacy
+  synthesis, and existing-topic hashes match the migration manifest;
+- `README.md`, `guide/`, `journal/`, and `open-questions.md` are the obvious
+  reading surface while `_evidence/` contains the machine-oriented records;
+- the home is short and navigational, journal entries group meaningful events,
+  and natural guide filenames answer ordinary subject searches;
+- one ordinary subject search reaches one canonical guide answer instead of a
+  cluster of capture-ID files;
+- source links are descriptive and clickable but do not clutter ordinary
+  prose;
+- an Obsidian collection uses vault-relative `[[path|label]]` links and native
+  embeds throughout the human surface, while a client-neutral fixture retains
+  relative Markdown links;
+- `_evidence/` remains visibly named and is not added to client exclusion
+  settings without an explicit user request;
+- another capture after migration lands under `_evidence/captures/`;
+- exact migration re-entry is idempotent, while a context containing both
+  `inbox/` and `_evidence/` is rejected.

@@ -19,6 +19,21 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Resolve-EvidenceRoot {
+    param([Parameter(Mandatory = $true)][string]$ContextRoot)
+
+    $humanFirstRoot = Join-Path $ContextRoot '_evidence'
+    $legacyRoot = Join-Path $ContextRoot 'inbox'
+    $hasHumanFirst = Test-Path -LiteralPath $humanFirstRoot -PathType Container
+    $hasLegacy = Test-Path -LiteralPath $legacyRoot -PathType Container
+    if ($hasHumanFirst -and $hasLegacy) {
+        throw "Active context has both '_evidence' and legacy 'inbox' backends. Refusing an ambiguous write."
+    }
+    if ($hasHumanFirst) { return $humanFirstRoot }
+    if ($hasLegacy) { return $legacyRoot }
+    throw "Active context has no evidence backend: $ContextRoot"
+}
+
 if (-not [IO.Path]::IsPathRooted($VaultPath)) {
     throw 'VaultPath must be an absolute path.'
 }
@@ -48,12 +63,13 @@ if (-not $ContextSlug) {
 }
 
 $contextRoot = Join-Path $vaultRoot "collections\$CollectionSlug\contexts\$ContextSlug"
+$evidenceRoot = Resolve-EvidenceRoot -ContextRoot $contextRoot
 $captureDate = $CaptureId.Substring(4, 8)
 $dateDirectory = '{0}-{1}-{2}' -f
     $captureDate.Substring(0, 4),
     $captureDate.Substring(4, 2),
     $captureDate.Substring(6, 2)
-$capturePath = Join-Path $contextRoot "inbox\captures\$dateDirectory\$CaptureId.md"
+$capturePath = Join-Path $evidenceRoot "captures\$dateDirectory\$CaptureId.md"
 if (-not (Test-Path -LiteralPath $capturePath -PathType Leaf)) {
     throw "Capture '$CaptureId' does not exist in the selected context."
 }

@@ -1,6 +1,6 @@
 interface:
   display_name: "AI Second Brain"
-  short_description: "Build grounded knowledge from text, images, audio, and video"
+  short_description: "Build a readable notebook with grounded media evidence"
   default_prompt: "Use $ai-second-brain to capture, interpret, and organize this evidence in my active local context: [information or media]."
 
 policy:

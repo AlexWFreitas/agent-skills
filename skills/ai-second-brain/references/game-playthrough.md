@@ -7,6 +7,41 @@ The game is a collection and one playthrough is a context. The generic vault
 contract remains authoritative; game-specific organization must not rename or
 replace its core files.
 
+## Human playthrough notebook
+
+Make `README.md` the obvious starting point. During an active run, show the
+current position, immediate objective, important carried state, and links to
+the guide and journal. After completion, replace the immediate objective with a
+short completion result and preserve the route in the journal.
+
+Use `guide/index.md` as a compact contents page. Create naturally named guide
+notes only when evidence exists. Common useful notes include:
+
+- `story-and-characters.md` for plot facts, relationships, motives, and named
+  people;
+- `locations-and-route.md` for floors, areas, access routes, and landmarks;
+- `items-and-equipment.md` for acquisitions, uses, and confirmed equipment;
+- `puzzles-and-solutions.md` for reusable clues, sequences, and solved rooms;
+- `bosses-and-combat.md` for encounters and rewards;
+- `mechanics-and-resources.md` for repeatable systems, shops, farming, and
+  traversal rules.
+
+These names are examples, not a mandatory empty taxonomy. Merge or split notes
+according to the actual playthrough. Give each fact one canonical guide home
+and link to it from other notes.
+
+Write `journal/` entries as readable sessions or chapters. Group adjacent
+captures into meaningful developments such as entering a floor, solving a
+puzzle chain, defeating a boss, or reaching the ending. Never mirror one raw
+capture into one journal bullet by default.
+
+An unknown detail is not automatically an open question. Track it in
+`open-questions.md` only when resolving it would help the player, explain a
+material conflict, or support an active hypothesis. If the user says a detail
+does not matter, the game does not expose it, or the playthrough has moved on,
+remove it from active questions while retaining its evidence and any useful
+guide fact.
+
 ## Eligible captures
 
 Typical deliberate inputs include:
@@ -20,9 +55,8 @@ Typical deliberate inputs include:
 - screenshots with a user caption;
 - corrected foreground voice transcripts.
 
-Create topic notes only after enough evidence exists. Useful topic names may
-include `characters.md`, `locations.md`, `mechanics.md`, or `quests.md`, but do
-not pre-create an empty taxonomy.
+Create guide notes only after enough evidence exists. Do not pre-create an
+empty taxonomy.
 
 ## Spoiler boundary
 

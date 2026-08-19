@@ -1,13 +1,14 @@
 ---
 name: ai-second-brain
-description: Capture, interpret, organize, reconcile, and retrieve user-provided text, screenshots, video, and dictated knowledge in a local Markdown vault while preserving provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
+description: Capture, interpret, organize, reconcile, and retrieve user-provided text, screenshots, video, and dictated knowledge in a human-readable local Markdown vault while preserving a separate evidence backend, provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
 ---
 
 # AI Second Brain
 
 Operate a user-owned Markdown vault as the authoritative record. Capture
 deliberate inputs before interpreting them, use only the active context, and
-default to acting as though no outside subject knowledge is available.
+default to acting as though no outside subject knowledge is available. Keep the
+human notebook readable without sacrificing the separate evidence trail.
 
 ## Required resources
 
@@ -23,6 +24,9 @@ the portable behavioral authority:
 
 - [scripts/Initialize-SecondBrain.ps1](scripts/Initialize-SecondBrain.ps1)
   initializes a vault and first context;
+- [scripts/Migrate-SecondBrainHumanLayout.ps1](scripts/Migrate-SecondBrainHumanLayout.ps1)
+  converts one intact legacy context to the human-first layout while verifying
+  preserved-file hashes;
 - [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
   creates immutable evidence and its first append-only processing event.
 - [scripts/Complete-SecondBrainScreenshot.ps1](scripts/Complete-SecondBrainScreenshot.ps1)
@@ -190,8 +194,10 @@ After capture-first routing, or immediately for a pure control command:
    `second-brain.md` as the vault root.
 2. Read `second-brain.md` and announce the active collection/context before
    substantive work in a fresh task.
-3. Read only the selected context's `context.md`, `open-items.md`, relevant
-   activity reference, processing events, and the minimum evidence needed.
+3. Read the selected context's `README.md`, `open-questions.md`, relevant guide
+   and journal notes, `_evidence/state.md`, processing events, and only the
+   minimum captures needed. In an unmigrated legacy context, read the old
+   `context.md` and `open-items.md` instead.
 4. Stop for confirmation when no active context exists, multiple contexts
    plausibly match, or the opening input is a control command indicating
    another subject. When two or three known contexts plausibly match, use
@@ -207,9 +213,10 @@ Use only the active context and the captured evidence.
 - For text or voice, distinguish the user's direct statement, a proposed
   interpretation, and uncertainty.
 - For a screenshot with durable media, create
-  `inbox/interpretations/<capture-id>.md` with `Direct observations`,
+  `_evidence/interpretations/<capture-id>.md` with `Direct observations`,
   `AI inferences`, and `Unresolved`. Link every inference to its supporting
-  observation and label confidence.
+  observation and label confidence. Use `inbox/interpretations/` only for an
+  intact unmigrated legacy context.
 - For a screenshot still pending save-first, do not claim visual evidence is
   retained. Ask the user to save the image locally and keep the item blocked or
   pending.
@@ -255,30 +262,46 @@ Reconcile when the user asks to organize/checkpoint, before answering a query
 that needs current cross-session knowledge, and when the user ends the activity
 session. Apply explicit corrections and material state changes immediately.
 
-1. Read pending/interpreted processing events and their captures.
-2. Update `context.md` current state, `timeline.md`, `open-items.md`, and
-   justified `topics/` notes as one coherent synthesis.
-3. Link every material claim to capture IDs. Keep inference and uncertainty
-   labeled.
-4. Classify each apparent conflict as correction, state transition, or
-   ambiguous conflict using the vault contract.
-5. Append `reconciled` or `conflicted` processing events. Never remove prior
-   events or captures.
-6. Update the latest-checkpoint and last-active fields only after the
-   synthesized files agree.
-7. Report the checkpoint, unresolved conflicts, and pending screenshot
-   evidence concisely.
+1. Read pending/interpreted processing events and the minimum supporting
+   captures.
+2. Choose one canonical guide note for each durable subject. Use natural
+   filenames/headings and cross-link instead of duplicating whole facts.
+3. Add a readable journal entry only for meaningful developments; never mirror
+   the raw ledger one capture per line.
+4. Refresh the short `README.md` status and navigation without turning it into
+   another fact dump.
+5. Keep only useful unresolved work in `open-questions.md`. Unknown trivia is
+   not automatically a task; remove resolved and scope-closed items from the
+   active list.
+6. Put human-labeled, clickable evidence links at the end of each changed
+   section. When the active collection is an Obsidian vault or the user asks
+   for Obsidian links, use vault-relative `[[path|label]]` wikilinks and
+   `![[path|label]]` media embeds consistently. Otherwise use portable relative
+   Markdown links. Keep bare capture IDs out of ordinary prose.
+7. Classify conflicts using the vault contract, then append `reconciled` or
+   `conflicted` events without removing prior evidence.
+8. Update `_evidence/state.md`, latest-checkpoint, and last-active metadata only
+   after the human notes agree.
+9. Report the checkpoint, unresolved conflicts, and pending media concisely.
 
-Do not create empty topic taxonomies. A checkpoint may legitimately conclude
-that no new topic note is justified.
+Do not create empty guide taxonomies. A checkpoint may legitimately conclude
+that no new guide note is justified. For an intact legacy layout, retain its
+paths until the migration helper is explicitly authorized; do not create a
+partial mix of `inbox` and `_evidence`.
+
+Keep `_evidence/` visibly named as the backend by default. Do not hide it or
+change a client's excluded-file settings unless the user explicitly asks.
 
 ## Retrieve and answer
 
 Before cross-session recall, reconcile relevant pending evidence. Search only
 the active context unless a cross-context operation was explicit.
 
+- Search `README.md`, `guide/`, and `journal/` first. Use `_evidence/` to verify
+  provenance or resolve gaps, not as the ordinary answer surface.
 - Lead with the direct answer supported by the record.
-- Cite compact capture IDs or governing topic notes beside material claims.
+- Link the governing human note or use descriptive evidence links. Provide raw
+  capture IDs only when the user asks for the evidence chain.
 - Label inference and uncertainty.
 - When the active record is insufficient, say exactly that. Do not use latent
   knowledge to complete, confirm, deny, hint, warn, or steer.
@@ -289,9 +312,9 @@ conflict or interpretation problem.
 
 ## Correct and resolve conflicts
 
-- **Explicit correction:** capture the correction first, update current
-  synthesis immediately, preserve the superseded claim and both capture IDs,
-  and append the change to the timeline.
+- **Explicit correction:** capture the correction first, update the canonical
+  guide section immediately, preserve the superseded evidence, and record the
+  change in the journal when it matters chronologically.
 - **State transition:** preserve old and new states with applicable times.
 - **Ambiguous conflict:** preserve both, mark current knowledge uncertain,
   append a `conflicted` event, and ask the user. Use `request_user_input` when

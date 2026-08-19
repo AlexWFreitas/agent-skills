@@ -33,7 +33,9 @@ Do not equate "not on `PATH`" with "not installed." Before reporting Whisper
 as unavailable, use this bounded order:
 
 1. explicit `-WhisperPath` and `-WhisperModelPath` overrides, when supplied;
-2. `inbox/media-processing/processing-runtime.md` in the active context;
+2. `_evidence/media-processing/processing-runtime.md` in a layout-version-2
+   active context (or `inbox/media-processing/processing-runtime.md` in an
+   unmigrated legacy context);
 3. the stable per-user Codex location `.codex/local-tools/whisper.cpp`, where
    the helper searches versioned `whisper-cli.exe` files and multilingual
    models under `models/`;
@@ -78,7 +80,7 @@ After durable capture succeeds, run
 6. publishes the completed derivative directory atomically and appends a
    processing event.
 
-Expected files under `inbox/media-processing/<capture-id>/` are:
+Expected files under `_evidence/media-processing/<capture-id>/` are:
 
 ```text
 manifest.json
@@ -148,7 +150,7 @@ Do not identify an unseen sound source as fact.
 
 ## Write the interpretation
 
-Create `inbox/interpretations/<capture-id>.md` with these sections:
+Create `_evidence/interpretations/<capture-id>.md` with these sections:
 
 1. `Media and coverage` — duration, streams, sampled ranges, model/tool facts,
    and limitations;
