@@ -569,6 +569,12 @@ if ($command -eq 'build') {
         include_external = ($ToolArguments -contains '--include-external')
         tree_fingerprint = 'fixture-fingerprint'
         sqlite_version = 'fixture-sqlite'
+        semantic_enabled = ($ToolArguments -contains '--semantic')
+        embedding_provider = if ($ToolArguments -contains '--semantic') { Get-ToolArgument '--embedding-provider' } else { $null }
+        embedding_model = if ($ToolArguments -contains '--semantic') { Get-ToolArgument '--embedding-model' } else { $null }
+        embedding_endpoint = if ($ToolArguments -contains '--semantic') { Get-ToolArgument '--embedding-endpoint' } else { $null }
+        embedding_dimension = if ($ToolArguments -contains '--semantic') { 4 } else { 0 }
+        semantic_sections = if ($ToolArguments -contains '--semantic') { 13 } else { 0 }
     } | ConvertTo-Json -Compress
     return
 }
@@ -585,10 +591,19 @@ if ($command -eq 'query') {
         query = (Get-ToolArgument '--query')
         effective_query = '"soft" AND "earth"'
         fallback_used = $false
+        semantic_requested = ($ToolArguments -contains '--semantic')
+        semantic_used = ($ToolArguments -contains '--semantic')
+        semantic_error = $null
+        embedding_model = if ($ToolArguments -contains '--semantic') { 'fixture-embedding-model' } else { $null }
         results = @(
             [ordered]@{
                 rank = 1
                 score = -0.75
+                lexical_rank = 1
+                semantic_rank = if ($ToolArguments -contains '--semantic') { 1 } else { $null }
+                semantic_similarity = if ($ToolArguments -contains '--semantic') { 0.95 } else { $null }
+                hybrid_score = if ($ToolArguments -contains '--semantic') { 0.032786885 } else { $null }
+                retrieval_modes = if ($ToolArguments -contains '--semantic') { @('lexical', 'semantic') } else { @('lexical') }
                 relative_path = 'guide/mechanics.md'
                 absolute_path = $source
                 source_tier = 'human'
@@ -640,6 +655,28 @@ throw "Unexpected fake Python command '$command'."
     Assert-Equal 'Mechanics > Soft Earth' $searched.Results[0].Heading 'FTS5 result lost heading provenance.'
     Assert-True ($searched.Results[0].Snippet -match '\[soil plot\]') 'FTS5 result lost its ranked snippet.'
 
+    $semanticBuilt = & $buildSearchIndexScript `
+        -VaultPath $vault `
+        -PythonPath $fakePython `
+        -Semantic `
+        -EmbeddingModel 'fixture-embedding-model' `
+        -Confirm:$false
+    Assert-True $semanticBuilt.SemanticEnabled 'Semantic build flag was not forwarded to the engine.'
+    Assert-Equal 'fixture-embedding-model' $semanticBuilt.EmbeddingModel 'Semantic model metadata was lost.'
+    Assert-Equal 4 $semanticBuilt.EmbeddingDimension 'Semantic vector dimension was lost.'
+    Assert-Equal 13 $semanticBuilt.SemanticSections 'Semantic row count was lost.'
+
+    $semanticSearch = & $searchIndexScript `
+        -VaultPath $vault `
+        -Query 'description without exact terms' `
+        -PythonPath $fakePython `
+        -Semantic
+    Assert-True $semanticSearch.SemanticRequested 'Semantic query flag was not forwarded.'
+    Assert-True $semanticSearch.SemanticUsed 'Semantic query result was not surfaced.'
+    Assert-Equal 1 $semanticSearch.Results[0].SemanticRank 'Semantic rank was lost.'
+    Assert-True ($semanticSearch.Results[0].RetrievalModes -contains 'semantic') `
+        'Hybrid result did not preserve its semantic retrieval mode.'
+
     $outsideFailed = $false
     try {
         & $buildSearchIndexScript `
@@ -662,6 +699,8 @@ throw "Unexpected fake Python command '$command'."
         'Local-search reference does not exclude outside knowledge by default.'
     Assert-True ($scenarios.Contains('## V26 — Disposable context-isolated FTS5 retrieval')) `
         'Validation scenarios do not exercise the optional FTS5 layer.'
+    Assert-True ($scenarios.Contains('## V27 — Optional loopback hybrid semantic retrieval')) `
+        'Validation scenarios do not exercise hybrid semantic retrieval.'
 }
 
 $realPython = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -782,6 +821,193 @@ Forbidden sibling fact.
             -PythonPath $realPython.Source
         Assert-False $freshAgain.IndexStale 'Atomic rebuild did not refresh the real FTS5 index.'
         Assert-Equal $rebuilt.IndexPath $freshAgain.IndexPath 'Rebuild changed the context-specific index identity.'
+    }
+}
+
+if ($realPython) {
+    Invoke-Test 'second brain hybrid search uses loopback embeddings and lexical fallback' {
+        $vault = New-SecondBrainFixture 'second-brain-hybrid-real'
+        $context = Join-Path $vault 'collections\test-subject\contexts\main'
+        $guidePath = Join-Path $context 'guide\time-travel.md'
+        Set-Content -LiteralPath $guidePath -Encoding UTF8 -Value @'
+# Time travel
+
+## Concentric floor tile
+
+A concentric brown floor tile transfers Link across temporal states.
+'@
+        Set-Content -LiteralPath (Join-Path $context 'guide\unrelated.md') -Encoding UTF8 -Value @'
+# Unrelated
+
+The village shop sells ordinary supplies.
+'@
+        Set-Content -LiteralPath (Join-Path $context 'external\semantic-outside.md') -Encoding UTF8 -Value @'
+# Outside semantic note
+
+A hidden portal jumps between eras but is not firsthand playthrough evidence.
+'@
+        $guideHash = (Get-FileHash -LiteralPath $guidePath -Algorithm SHA256).Hash
+
+        $listener = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
+        $listener.Start()
+        $port = ([Net.IPEndPoint]$listener.LocalEndpoint).Port
+        $listener.Stop()
+        $serverScript = Join-Path $script:TemporaryRoot 'mock-ollama-embed.py'
+        Set-Content -LiteralPath $serverScript -Encoding UTF8 -Value @'
+import json
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import sys
+
+def vector(text):
+    lowered = text.lower()
+    if "dimension mismatch query" in lowered:
+        return [1.0, 0.0, 0.0]
+    if any(term in lowered for term in ("concentric", "temporal", "portal", "jumping", "eras")):
+        return [1.0, 0.0, 0.0, 0.0]
+    if any(term in lowered for term in ("shop", "supplies")):
+        return [0.0, 1.0, 0.0, 0.0]
+    return [0.0, 0.0, 0.0, 1.0]
+
+class Handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path != "/api/embed":
+            self.send_error(404)
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        inputs = payload.get("input", [])
+        if isinstance(inputs, str):
+            inputs = [inputs]
+        body = json.dumps({"model": payload.get("model"), "embeddings": [vector(item) for item in inputs]}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, format, *args):
+        return
+
+ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])), Handler).serve_forever()
+'@
+
+        $server = Start-Process `
+            -FilePath $realPython.Source `
+            -ArgumentList @('-B', $serverScript, [string]$port) `
+            -WindowStyle Hidden `
+            -PassThru
+        $endpoint = "http://127.0.0.1:$port"
+        $started = $false
+        try {
+            for ($attempt = 0; $attempt -lt 50; $attempt++) {
+                $client = New-Object Net.Sockets.TcpClient
+                try {
+                    $client.Connect('127.0.0.1', $port)
+                    $started = $true
+                    break
+                }
+                catch { Start-Sleep -Milliseconds 100 }
+                finally { $client.Dispose() }
+            }
+            Assert-True $started 'Local mock embedding endpoint did not start.'
+
+            $built = & $buildSearchIndexScript `
+                -VaultPath $vault `
+                -PythonPath $realPython.Source `
+                -Semantic `
+                -IncludeExternal `
+                -EmbeddingModel 'fixture-embedding-model' `
+                -EmbeddingEndpoint $endpoint `
+                -EmbeddingBatchSize 3 `
+                -Confirm:$false
+            Assert-True $built.SemanticEnabled 'Hybrid fixture did not build semantic vectors.'
+            Assert-Equal 4 $built.EmbeddingDimension 'Hybrid fixture lost vector dimension.'
+            Assert-Equal $built.Sections $built.SemanticSections 'Not every indexed section received an embedding.'
+            Assert-Equal $guideHash (Get-FileHash -LiteralPath $guidePath -Algorithm SHA256).Hash `
+                'Semantic build changed the authoritative guide.'
+
+            $semanticOnly = & $searchIndexScript `
+                -VaultPath $vault `
+                -Query 'portal for jumping between eras' `
+                -PythonPath $realPython.Source `
+                -Semantic `
+                -EmbeddingEndpoint $endpoint
+            Assert-True $semanticOnly.SemanticUsed 'Description query did not use semantic retrieval.'
+            $semanticGuide = @($semanticOnly.Results | Where-Object { $_.RelativePath -eq 'guide/time-travel.md' })
+            Assert-True ($semanticGuide.Count -gt 0) 'Semantic retrieval missed the description-only matching guide.'
+            Assert-True ($semanticGuide[0].RetrievalModes -contains 'semantic') 'Semantic result lost its retrieval mode.'
+            Assert-True ($null -eq $semanticGuide[0].LexicalRank) 'Description-only fixture unexpectedly depended on lexical retrieval.'
+            Assert-Equal 0 @($semanticOnly.Results | Where-Object { $_.SourceTier -eq 'external' }).Count `
+                'Normal semantic query leaked explicitly indexed outside knowledge.'
+
+            $semanticExternal = & $searchIndexScript `
+                -VaultPath $vault `
+                -Query 'portal for jumping between eras' `
+                -PythonPath $realPython.Source `
+                -Semantic `
+                -IncludeExternal `
+                -EmbeddingEndpoint $endpoint
+            Assert-True (@($semanticExternal.Results | Where-Object { $_.SourceTier -eq 'external' }).Count -gt 0) `
+                'Scoped semantic query did not return explicitly included outside knowledge.'
+
+            $hybrid = & $searchIndexScript `
+                -VaultPath $vault `
+                -Query 'concentric brown floor tile' `
+                -PythonPath $realPython.Source `
+                -Semantic `
+                -EmbeddingEndpoint $endpoint
+            $hybridGuide = @($hybrid.Results | Where-Object { $_.RelativePath -eq 'guide/time-travel.md' })
+            Assert-True ($hybridGuide.Count -gt 0) 'Hybrid query missed the governing guide.'
+            Assert-True ($hybridGuide[0].RetrievalModes -contains 'lexical') 'Hybrid result lost lexical provenance.'
+            Assert-True ($hybridGuide[0].RetrievalModes -contains 'semantic') 'Hybrid result lost semantic provenance.'
+            Assert-True ($hybridGuide[0].HybridScore -gt 0) 'Hybrid result lost reciprocal-rank score.'
+
+            $dimensionMismatch = & $searchIndexScript `
+                -VaultPath $vault `
+                -Query 'dimension mismatch query' `
+                -PythonPath $realPython.Source `
+                -Semantic `
+                -EmbeddingEndpoint $endpoint `
+                -WarningAction SilentlyContinue
+            Assert-False $dimensionMismatch.SemanticUsed 'Dimension mismatch was accepted as semantic evidence.'
+            Assert-True ($dimensionMismatch.SemanticError -match 'dimension') 'Dimension mismatch did not produce a visible semantic error.'
+
+            $indexHash = (Get-FileHash -LiteralPath $built.IndexPath -Algorithm SHA256).Hash
+            $remoteFailed = $false
+            try {
+                & $buildSearchIndexScript `
+                    -VaultPath $vault `
+                    -PythonPath $realPython.Source `
+                    -Semantic `
+                    -IncludeExternal `
+                    -EmbeddingModel 'fixture-embedding-model' `
+                    -EmbeddingEndpoint 'http://example.com' `
+                    -Confirm:$false *> $null
+            }
+            catch { $remoteFailed = $_.Exception.Message -match 'loopback|127\.0\.0\.1' }
+            Assert-True $remoteFailed 'Semantic build accepted a non-loopback embedding endpoint.'
+            Assert-Equal $indexHash (Get-FileHash -LiteralPath $built.IndexPath -Algorithm SHA256).Hash `
+                'Failed semantic rebuild replaced the prior completed index.'
+        }
+        finally {
+            if ($server -and -not $server.HasExited) {
+                Stop-Process -Id $server.Id -Force
+                $server.WaitForExit()
+            }
+        }
+
+        $lexicalFallback = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'concentric brown floor tile' `
+            -PythonPath $realPython.Source `
+            -Semantic `
+            -EmbeddingEndpoint $endpoint `
+            -EmbeddingTimeoutSeconds 2 `
+            -WarningAction SilentlyContinue
+        Assert-False $lexicalFallback.SemanticUsed 'Offline endpoint did not degrade semantic retrieval.'
+        Assert-True ([bool]$lexicalFallback.SemanticError) 'Offline semantic fallback did not expose its limitation.'
+        Assert-True (@($lexicalFallback.Results | Where-Object { $_.RetrievalModes -contains 'lexical' }).Count -gt 0) `
+            'Offline semantic endpoint blocked otherwise valid FTS5 results.'
     }
 }
 

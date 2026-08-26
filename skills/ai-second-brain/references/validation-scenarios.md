@@ -381,3 +381,30 @@ Pass:
   reference, media, ledger, or provenance content;
 - missing Python/FTS5 or a missing/stale index falls back to ordinary file
   search rather than blocking retrieval.
+
+## V27 — Optional loopback hybrid semantic retrieval
+
+In an isolated context, use a local mock `/api/embed` endpoint whose vectors
+make a description-only query similar to a source that shares no important
+lexical terms. Build with semantic indexing, then query with hybrid retrieval.
+
+Pass:
+
+- semantic build requires an explicit model and accepts only a loopback HTTP
+  endpoint with no credentials or redirects;
+- batched vectors have one stable dimension, are normalized, and are stored as
+  ordinary SQLite BLOBs linked to the corresponding FTS5 row IDs;
+- exact cosine retrieval finds the description-based source that lexical FTS5
+  alone misses;
+- reciprocal-rank fusion promotes evidence found by both lexical and semantic
+  retrieval while preserving each component rank and score;
+- the same indexed model is used for the query, and a dimension change fails
+  safely;
+- endpoint or model failure preserves a prior completed index during build and
+  degrades a query to valid FTS5 results with a visible semantic error;
+- external and sibling-context rows remain excluded under the same boundaries
+  as lexical search;
+- similarity never modifies a source, confirms a fact, merges a visual
+  reference, resolves a conflict, or bypasses original-file verification;
+- no hosted request, vector extension, approximate-nearest-neighbor index, or
+  visual embedding is introduced.

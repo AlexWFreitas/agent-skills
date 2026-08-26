@@ -22,7 +22,15 @@ param(
 
     [switch]$RawQuery,
 
-    [switch]$IncludeExternal
+    [switch]$IncludeExternal,
+
+    [Alias('Hybrid')]
+    [switch]$Semantic,
+
+    [string]$EmbeddingEndpoint,
+
+    [ValidateRange(1, 600)]
+    [int]$EmbeddingTimeoutSeconds = 120
 )
 
 $ErrorActionPreference = 'Stop'
@@ -130,6 +138,12 @@ $arguments = @(
 )
 if ($RawQuery) { $arguments += '--raw-query' }
 if ($IncludeExternal) { $arguments += '--include-external' }
+if ($Semantic) {
+    $arguments += @('--semantic', '--embedding-timeout-seconds', [string]$EmbeddingTimeoutSeconds)
+    if ($EmbeddingEndpoint) {
+        $arguments += @('--embedding-endpoint', $EmbeddingEndpoint)
+    }
+}
 
 $global:LASTEXITCODE = 0
 $output = @(& $python @arguments 2>&1)
@@ -142,7 +156,12 @@ catch { throw "FTS5 search returned invalid JSON: $($_.Exception.Message)" }
 $results = @($result.results | ForEach-Object {
     [pscustomobject]@{
         Rank = [int]$_.rank
-        Score = [double]$_.score
+        Score = if ($null -ne $_.score) { [double]$_.score } else { $null }
+        LexicalRank = if ($null -ne $_.lexical_rank) { [int]$_.lexical_rank } else { $null }
+        SemanticRank = if ($null -ne $_.semantic_rank) { [int]$_.semantic_rank } else { $null }
+        SemanticSimilarity = if ($null -ne $_.semantic_similarity) { [double]$_.semantic_similarity } else { $null }
+        HybridScore = if ($null -ne $_.hybrid_score) { [double]$_.hybrid_score } else { $null }
+        RetrievalModes = @($_.retrieval_modes)
         Path = $_.absolute_path
         RelativePath = $_.relative_path
         SourceTier = $_.source_tier
@@ -158,6 +177,9 @@ $results = @($result.results | ForEach-Object {
 if ([bool]$result.index_stale) {
     Write-Warning 'The FTS5 index is stale. Rebuild it before relying on completeness; verify every returned source directly.'
 }
+if ($Semantic -and -not [bool]$result.semantic_used) {
+    Write-Warning "Semantic retrieval was unavailable and the query fell back to FTS5: $($result.semantic_error)"
+}
 if (@($results | Where-Object { $_.SourceStale -or -not $_.SourceExists }).Count -gt 0) {
     Write-Warning 'One or more returned sources changed or disappeared after indexing. Do not rely on their cached snippets.'
 }
@@ -170,5 +192,9 @@ if (@($results | Where-Object { $_.SourceStale -or -not $_.SourceExists }).Count
     IndexPath = $result.index_path
     IndexGeneratedAt = $result.index_generated_at
     IndexStale = [bool]$result.index_stale
+    SemanticRequested = [bool]$result.semantic_requested
+    SemanticUsed = [bool]$result.semantic_used
+    SemanticError = $result.semantic_error
+    EmbeddingModel = $result.embedding_model
     Results = $results
 }

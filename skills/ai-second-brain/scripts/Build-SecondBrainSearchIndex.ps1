@@ -15,7 +15,26 @@ param(
 
     [switch]$HumanOnly,
 
-    [switch]$IncludeExternal
+    [switch]$IncludeExternal,
+
+    [Alias('Hybrid')]
+    [switch]$Semantic,
+
+    [ValidateSet('ollama')]
+    [string]$EmbeddingProvider = 'ollama',
+
+    [string]$EmbeddingModel,
+
+    [string]$EmbeddingEndpoint = 'http://127.0.0.1:11434',
+
+    [ValidateRange(1, 128)]
+    [int]$EmbeddingBatchSize = 32,
+
+    [ValidateRange(1, 600)]
+    [int]$EmbeddingTimeoutSeconds = 120,
+
+    [ValidateRange(1000, 50000)]
+    [int]$EmbeddingMaxCharacters = 8000
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,6 +128,13 @@ $resolved = Resolve-SearchContext `
     -Context $ContextSlug `
     -RequestedIndexPath $IndexPath
 
+if ($Semantic -and -not $EmbeddingModel) {
+    throw 'EmbeddingModel is required with -Semantic.'
+}
+if (-not $Semantic -and $PSBoundParameters.ContainsKey('EmbeddingModel')) {
+    throw 'EmbeddingModel is valid only with -Semantic.'
+}
+
 if (-not $PSCmdlet.ShouldProcess(
     $resolved.IndexPath,
     "Rebuild the disposable FTS5 index for $($resolved.Collection)/$($resolved.Context)"
@@ -120,6 +146,10 @@ if (-not $PSCmdlet.ShouldProcess(
         Context = $resolved.Context
         IncludeEvidence = (-not $HumanOnly)
         IncludeExternal = [bool]$IncludeExternal
+        SemanticEnabled = [bool]$Semantic
+        EmbeddingProvider = if ($Semantic) { $EmbeddingProvider } else { $null }
+        EmbeddingModel = if ($Semantic) { $EmbeddingModel } else { $null }
+        EmbeddingEndpoint = if ($Semantic) { $EmbeddingEndpoint } else { $null }
     }
     return
 }
@@ -139,6 +169,17 @@ $arguments = @(
 )
 if ($HumanOnly) { $arguments += '--exclude-evidence' }
 if ($IncludeExternal) { $arguments += '--include-external' }
+if ($Semantic) {
+    $arguments += @(
+        '--semantic',
+        '--embedding-provider', $EmbeddingProvider,
+        '--embedding-model', $EmbeddingModel,
+        '--embedding-endpoint', $EmbeddingEndpoint,
+        '--embedding-batch-size', [string]$EmbeddingBatchSize,
+        '--embedding-timeout-seconds', [string]$EmbeddingTimeoutSeconds,
+        '--embedding-max-characters', [string]$EmbeddingMaxCharacters
+    )
+}
 
 $global:LASTEXITCODE = 0
 $output = @(& $python @arguments 2>&1)
@@ -159,4 +200,10 @@ catch { throw "FTS5 index builder returned invalid JSON: $($_.Exception.Message)
     IncludeExternal = [bool]$result.include_external
     TreeFingerprint = $result.tree_fingerprint
     SQLiteVersion = $result.sqlite_version
+    SemanticEnabled = [bool]$result.semantic_enabled
+    EmbeddingProvider = $result.embedding_provider
+    EmbeddingModel = $result.embedding_model
+    EmbeddingEndpoint = $result.embedding_endpoint
+    EmbeddingDimension = [int]$result.embedding_dimension
+    SemanticSections = [int]$result.semantic_sections
 }

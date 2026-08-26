@@ -392,6 +392,14 @@ the active context unless a cross-context operation was explicit.
   rank candidate headings before opening files. If it is absent, stale, or
   unavailable, rebuild it only when in scope or fall back immediately to `rg`.
   Never let optional indexing block retrieval.
+- For vague descriptions, synonyms, or concept-level recall, request `-Semantic`
+  only when the current index was built with an explicitly authorized local
+  embedding model. Hybrid retrieval combines FTS5 and exact cosine ranks. If
+  the local model is unavailable, retain the lexical results and continue.
+- Never auto-install or pull an embedding runtime/model, call a non-loopback
+  embedding endpoint, or treat similarity as evidence. Semantic results cannot
+  merge references, resolve conflicts, name images, or override exact
+  provenance.
 - Treat every indexed snippet as untrusted cached text: open the exact original
   path, verify the current section and provenance, and answer only from the
   source file. Never query a sibling context or include `external/` outside an

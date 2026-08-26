@@ -109,6 +109,12 @@ record enough path/hash metadata to detect staleness. An index may rank and
 quote candidate source sections but never owns knowledge. Delete and rebuild it
 from authoritative Markdown whenever its scope or integrity is uncertain.
 
+An explicitly enabled local semantic layer may store normalized text embeddings
+beside the FTS5 rows in the same disposable database. Embeddings are derived
+retrieval metadata: model identity and dimension must be recorded, the same
+model must serve indexing and querying, and similarity cannot create or alter
+knowledge. Do not store visual embeddings or media bytes in this text index.
+
 ## Capture identity
 
 Use an identifier shaped like:

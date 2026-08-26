@@ -41,7 +41,10 @@ Treat the directory containing this file as the vault root.
 - An optional SQLite FTS5 file under `.index/` is allowed only as a disposable,
   rebuildable retrieval cache. Keep one index per context, exclude sibling and
   outside-knowledge material by default, and open the original Markdown before
-  answering. The index is never evidence or authoritative storage.
+  answering. Optional local text embeddings may augment FTS5 only through an
+  explicitly authorized loopback model; similarity is never evidence and may
+  not merge references or resolve conflicts. The index is never evidence or
+  authoritative storage.
 - Treat standalone logging as fast intake: persist the accepted message and
   attachment, leave it pending, acknowledge it, and return without loading or
   rewriting the guide, journal, questions, or state. Interpret and reconcile

@@ -18,11 +18,16 @@ verify the answer there before responding.
 ## Runtime and location
 
 The optional helpers use Python 3.10 or later and its standard-library `sqlite3`
-module with FTS5.
-No hosted service, API key, embedding model, vector extension, or third-party
-Python package is required. If Python or FTS5 is unavailable, continue with
-`rg` and direct file reads; the missing index is never a capture or retrieval
-blocker.
+module with FTS5. Lexical indexing requires no hosted service, API key,
+embedding model, vector extension, or third-party Python package. If Python or
+FTS5 is unavailable, continue with `rg` and direct file reads; the missing index
+is never a capture or retrieval blocker.
+
+Semantic indexing is an additional opt-in mode. It calls an already available
+Ollama embedding model through a loopback-only `http://127.0.0.1`, `localhost`,
+or `::1` `/api/embed` endpoint. The helper rejects credentials, non-loopback
+hosts, HTTPS/remote endpoints, alternate paths, and redirects. Do not pull or
+install Ollama or an embedding model without explicit authorization.
 
 Keep one database per context at:
 
@@ -83,6 +88,29 @@ replaces the old index only after the new build succeeds. It never incrementally
 patches an uncertain index. Capture, interpretation, media, ledger, and human
 note bytes remain unchanged.
 
+To include local text embeddings, name a model that is already installed in
+Ollama:
+
+```powershell
+scripts/Build-SecondBrainSearchIndex.ps1 `
+  -VaultPath 'D:\Work\Vaults' `
+  -CollectionSlug 'oracle-of-ages' `
+  -ContextSlug 'main' `
+  -Semantic `
+  -EmbeddingModel '<installed-embedding-model>' `
+  -Confirm:$false
+```
+
+The model name, loopback endpoint, vector dimension, and semantic row count are
+recorded as disposable index metadata. Every heading-aligned FTS5 row receives
+one normalized vector stored as an ordinary SQLite BLOB. The current corpus is
+small enough for exact cosine comparison; no vector extension or approximate
+nearest-neighbor index is used.
+
+The same embedding model must serve both build and query operations. Changing
+the model requires a full rebuild. If any embedding batch fails, the temporary
+database is discarded and the prior completed index remains intact.
+
 Do not rebuild during fast intake. Refresh an existing index after an explicit
 checkpoint or immediately before indexed retrieval when the query reports that
 the database is stale.
@@ -111,6 +139,26 @@ Each result contains a rank, BM25 score, absolute and relative paths, source
 tier, note kind, capture ID, title, heading, snippet, and source-staleness
 flags. Treat results as candidates, not answers.
 
+For description or synonym-heavy questions, request hybrid retrieval:
+
+```powershell
+$search = scripts/Search-SecondBrainIndex.ps1 `
+  -VaultPath 'D:\Work\Vaults' `
+  -Query 'the soil patch where random reward seeds grow' `
+  -Semantic `
+  -Limit 10
+```
+
+Hybrid mode always runs lexical FTS5 and then attempts semantic retrieval. It
+uses exact cosine similarity over the stored vectors and reciprocal-rank fusion
+to merge lexical and semantic candidate ranks. Results expose lexical rank,
+semantic rank, cosine similarity, fused score, and which retrieval modes found
+the section.
+
+If the local embedding endpoint, model, or semantic table is unavailable, the
+query returns the lexical FTS5 results plus a semantic error. The wrapper warns
+about the degradation but does not fail an otherwise valid lexical retrieval.
+
 ## Staleness and fallback
 
 The index stores a context-tree fingerprint and each document's SHA-256. Every
@@ -133,7 +181,11 @@ vault collection/context selected by the PowerShell wrapper. The wrapper also
 restricts index paths to the vault's `.index/ai-second-brain/` directory. Do
 not bypass either check or combine contexts into one database.
 
-This first implementation is lexical FTS5 search only. Do not add embeddings,
-visual vectors, or a vector database unless a measured query suite shows that
-heading-aware full-text retrieval materially misses important synonym or
-description-based evidence.
+Semantic similarity is retrieval metadata, not evidence. It must not merge
+visual references, resolve conflicts, identify an object, promote an inference,
+or add a fact. Open and verify original files exactly as with lexical results.
+
+This implementation embeds text only. It does not compare screenshot pixels or
+create visual vectors. Keep visual recognition grounded in the curated visual
+library unless a separately measured and authorized visual-similarity feature
+is added later.
