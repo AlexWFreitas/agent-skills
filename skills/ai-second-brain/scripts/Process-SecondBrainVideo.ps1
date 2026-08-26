@@ -21,11 +21,16 @@ param(
 
     [string]$WhisperModelPath,
 
-    [ValidateRange(0.25, 60)]
-    [double]$FrameIntervalSeconds = 1,
+    [ValidateRange(0, 60)]
+    [double]$FrameIntervalSeconds = 0,
 
-    [ValidateRange(1, 10000)]
+    [ValidateRange(0, 240)]
+    [double]$FrameSampleFps = 0,
+
+    [ValidateRange(1, 100000)]
     [int]$MaxFrames = 1200,
+
+    [switch]$Reprocess,
 
     [ValidatePattern('^(auto|[a-z]{2,3})$')]
     [string]$Language = 'auto'
@@ -164,6 +169,28 @@ function Invoke-CheckedTool {
     }
 }
 
+function ConvertTo-FrameRate {
+    param([object]$Value)
+
+    if ($null -eq $Value) { return 0.0 }
+    $text = ([string]$Value).Trim()
+    if (-not $text -or $text -eq '0/0') { return 0.0 }
+    if ($text -match '^([0-9]+(?:\.[0-9]+)?)/([0-9]+(?:\.[0-9]+)?)$') {
+        $numerator = [double]$matches[1]
+        $denominator = [double]$matches[2]
+        if ($denominator -eq 0) { return 0.0 }
+        return $numerator / $denominator
+    }
+    $parsed = 0.0
+    if ([double]::TryParse(
+        $text,
+        [Globalization.NumberStyles]::Float,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [ref]$parsed
+    )) { return $parsed }
+    return 0.0
+}
+
 function Resolve-EvidenceRoot {
     param([Parameter(Mandatory = $true)][string]$ContextRoot)
 
@@ -216,7 +243,7 @@ if (-not $captureText.Contains('input_type: video')) {
 }
 
 $attachmentRoot = Join-Path $contextRoot 'attachments'
-$attachments = @(Get-ChildItem -LiteralPath $attachmentRoot -Filter "$CaptureId.*" -File |
+$attachments = @(Get-ChildItem -LiteralPath $attachmentRoot -Filter "$CaptureId*" -File |
     Where-Object { $_.Extension.ToLowerInvariant() -in @('.mp4', '.mov', '.mkv', '.webm', '.avi', '.m4v') })
 if ($attachments.Count -ne 1) {
     throw "Capture '$CaptureId' must have exactly one durable video attachment before processing."
@@ -248,10 +275,74 @@ if ($probe.format.duration) {
         [ref]$duration
     )
 }
-$effectiveInterval = $FrameIntervalSeconds
-if ($duration -gt 0 -and [Math]::Ceiling($duration / $effectiveInterval) -gt $MaxFrames) {
-    $effectiveInterval = $duration / $MaxFrames
+$sourceFrameRate = ConvertTo-FrameRate -Value $videoStreams[0].avg_frame_rate
+if ($sourceFrameRate -le 0) {
+    $sourceFrameRate = ConvertTo-FrameRate -Value $videoStreams[0].r_frame_rate
 }
+
+$explicitInterval = $PSBoundParameters.ContainsKey('FrameIntervalSeconds') -and $FrameIntervalSeconds -gt 0
+$explicitSampleRate = $PSBoundParameters.ContainsKey('FrameSampleFps') -and $FrameSampleFps -gt 0
+if ($explicitInterval -and $explicitSampleRate) {
+    throw 'Specify either FrameIntervalSeconds or FrameSampleFps, not both.'
+}
+if ($PSBoundParameters.ContainsKey('FrameIntervalSeconds') -and $FrameIntervalSeconds -le 0) {
+    throw 'FrameIntervalSeconds must be greater than zero when explicitly supplied.'
+}
+if ($PSBoundParameters.ContainsKey('FrameSampleFps') -and $FrameSampleFps -le 0) {
+    throw 'FrameSampleFps must be greater than zero when explicitly supplied.'
+}
+
+$samplingStrategy = 'adaptive-overview'
+$requestedSampleRate = if ($explicitSampleRate) {
+    $samplingStrategy = 'explicit-fps'
+    $FrameSampleFps
+}
+elseif ($explicitInterval) {
+    $samplingStrategy = 'explicit-interval'
+    1.0 / $FrameIntervalSeconds
+}
+elseif ($duration -gt 0 -and $duration -le 30) {
+    8.0
+}
+elseif ($duration -gt 0 -and $duration -le 120) {
+    4.0
+}
+else {
+    2.0
+}
+
+$effectiveSampleRate = $requestedSampleRate
+$sourceRateLimited = $false
+if ($sourceFrameRate -gt 0 -and $effectiveSampleRate -gt $sourceFrameRate) {
+    $effectiveSampleRate = $sourceFrameRate
+    $sourceRateLimited = $true
+}
+if ($effectiveSampleRate -le 0) { throw 'The effective visual sample rate must be greater than zero.' }
+
+$projectedFrameCount = if ($duration -gt 0) {
+    [int][Math]::Ceiling($duration * $effectiveSampleRate)
+}
+else {
+    0
+}
+$samplingWasCapped = $false
+$explicitVisualRate = $explicitSampleRate -or $explicitInterval
+if ($projectedFrameCount -gt $MaxFrames) {
+    if ($explicitVisualRate) {
+        if ($PSBoundParameters.ContainsKey('MaxFrames')) {
+            throw "The requested visual rate would create about $projectedFrameCount frames, above MaxFrames=$MaxFrames. Raise MaxFrames or lower the requested rate; the processor will not silently reduce an explicit rate."
+        }
+        if ($projectedFrameCount -gt 100000) {
+            throw "The requested visual rate would create about $projectedFrameCount frames, above the hard safety limit of 100000. Use a lower rate or a shorter source clip."
+        }
+    }
+    elseif ($duration -gt 0) {
+        $effectiveSampleRate = $MaxFrames / $duration
+        $projectedFrameCount = $MaxFrames
+        $samplingWasCapped = $true
+    }
+}
+$effectiveInterval = 1.0 / $effectiveSampleRate
 
 $whisper = $null
 $model = $null
@@ -288,11 +379,38 @@ if (-not (Test-Path -LiteralPath $mediaRoot)) {
     [void](New-Item -ItemType Directory -Path $mediaRoot)
 }
 $targetRoot = Join-Path $mediaRoot $CaptureId
-if (Test-Path -LiteralPath $targetRoot) {
+$targetAlreadyExists = Test-Path -LiteralPath $targetRoot -PathType Container
+if ($targetAlreadyExists -and -not $Reprocess) {
+    $existingManifestPath = Join-Path $targetRoot 'manifest.json'
+    $existingSampleRate = 0.0
+    if (Test-Path -LiteralPath $existingManifestPath -PathType Leaf) {
+        try {
+            $existingManifest = Get-Content -LiteralPath $existingManifestPath -Raw | ConvertFrom-Json
+            if ($existingManifest.effective_frame_sample_fps) {
+                $existingSampleRate = [double]$existingManifest.effective_frame_sample_fps
+            }
+            elseif ($existingManifest.frame_interval_seconds -and [double]$existingManifest.frame_interval_seconds -gt 0) {
+                $existingSampleRate = 1.0 / [double]$existingManifest.frame_interval_seconds
+            }
+        }
+        catch { $existingSampleRate = 0.0 }
+    }
+    if ($explicitVisualRate -and
+        ($existingSampleRate -le 0 -or [Math]::Abs($existingSampleRate - $effectiveSampleRate) -gt 0.001)) {
+        $existingDescription = if ($existingSampleRate -gt 0) {
+            $existingSampleRate.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture) + ' fps'
+        }
+        else {
+            'an unknown visual rate'
+        }
+        $requestedDescription = $effectiveSampleRate.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture) + ' fps'
+        throw "Existing derivatives use $existingDescription, not the requested $requestedDescription. Pass -Reprocess to regenerate derivatives from the immutable source video; the requested rate was not ignored."
+    }
     [pscustomobject]@{
         State = 'existing-processing'
         CaptureId = $CaptureId
         ProcessingPath = $targetRoot
+        EffectiveFrameSampleFps = $existingSampleRate
     }
     return
 }
@@ -303,6 +421,7 @@ $temporaryFull = [IO.Path]::GetFullPath($temporaryRoot)
 if (-not $temporaryFull.StartsWith($mediaRootFull, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'Refusing to use a temporary directory outside the active media-processing directory.'
 }
+$backupRoot = $null
 
 try {
     [void](New-Item -ItemType Directory -Path $temporaryRoot)
@@ -310,11 +429,11 @@ try {
     [void](New-Item -ItemType Directory -Path $framesRoot)
     Write-Utf8File -LiteralPath (Join-Path $temporaryRoot 'ffprobe.json') -Content $probeText
 
-    $intervalText = $effectiveInterval.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture)
+    $sampleRateText = $effectiveSampleRate.ToString('0.######', [Globalization.CultureInfo]::InvariantCulture)
     $framePattern = Join-Path $framesRoot 'frame-%06d.jpg'
     Invoke-CheckedTool -LiteralPath $ffmpeg -Purpose 'Video frame extraction' -Arguments @(
         '-hide_banner', '-loglevel', 'error', '-y', '-i', $videoPath,
-        '-map', '0:v:0', '-vf', "fps=1/$intervalText", '-q:v', '2', $framePattern
+        '-map', '0:v:0', '-vf', "fps=$sampleRateText", '-q:v', '2', $framePattern
     )
 
     $frameFiles = @(Get-ChildItem -LiteralPath $framesRoot -Filter 'frame-*.jpg' -File | Sort-Object Name)
@@ -356,9 +475,15 @@ try {
         generated_at = (Get-Date -Format 'yyyy-MM-ddTHH:mm:ssK')
         source_attachment = "../../../attachments/$($attachments[0].Name)"
         duration_seconds = [Math]::Round($duration, 3)
+        source_frame_rate_fps = if ($sourceFrameRate -gt 0) { [Math]::Round($sourceFrameRate, 3) } else { $null }
+        sampling_strategy = $samplingStrategy
+        requested_frame_sample_fps = [Math]::Round($requestedSampleRate, 6)
+        effective_frame_sample_fps = [Math]::Round($effectiveSampleRate, 6)
         frame_interval_seconds = [Math]::Round($effectiveInterval, 3)
         frame_count = $frameFiles.Count
         visual_coverage = 'sampled-frames'
+        sampling_was_capped = $samplingWasCapped
+        source_rate_limited = $sourceRateLimited
         audio_stream_count = $audioStreams.Count
         transcription_state = $transcriptionState
         language = if ($audioStreams.Count -gt 0) { $Language } else { 'none' }
@@ -367,11 +492,37 @@ try {
         $manifest | ConvertTo-Json -Depth 4
     )
 
-    [IO.Directory]::Move($temporaryRoot, $targetRoot)
+    if (Test-Path -LiteralPath $targetRoot -PathType Container) {
+        $backupRoot = Join-Path $mediaRoot ('.previous-' + $CaptureId + '-' + [guid]::NewGuid().ToString('N'))
+        $backupFull = [IO.Path]::GetFullPath($backupRoot)
+        if (-not $backupFull.StartsWith($mediaRootFull, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Refusing to use a backup directory outside the active media-processing directory.'
+        }
+        [IO.Directory]::Move($targetRoot, $backupRoot)
+        try {
+            [IO.Directory]::Move($temporaryRoot, $targetRoot)
+        }
+        catch {
+            if (-not (Test-Path -LiteralPath $targetRoot) -and (Test-Path -LiteralPath $backupRoot)) {
+                [IO.Directory]::Move($backupRoot, $targetRoot)
+            }
+            throw
+        }
+        try { Remove-Item -LiteralPath $backupRoot -Recurse -Force }
+        catch { Write-Warning "Reprocessing succeeded but the prior derived-data backup remains at '$backupRoot': $($_.Exception.Message)" }
+    }
+    else {
+        [IO.Directory]::Move($temporaryRoot, $targetRoot)
+    }
 }
 catch {
     if (Test-Path -LiteralPath $temporaryRoot) {
         Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
+    }
+    if ($backupRoot -and
+        (Test-Path -LiteralPath $backupRoot -PathType Container) -and
+        -not (Test-Path -LiteralPath $targetRoot)) {
+        [IO.Directory]::Move($backupRoot, $targetRoot)
     }
     throw
 }
@@ -379,10 +530,10 @@ catch {
 $eventScript = Join-Path $PSScriptRoot 'Add-SecondBrainProcessingEvent.ps1'
 $evidenceDirectoryName = Split-Path -Leaf $evidenceRoot
 $eventDetail = if ($audioStreams.Count -gt 0) {
-    "video frames and offline audio transcript prepared at collections/$CollectionSlug/contexts/$ContextSlug/$evidenceDirectoryName/media-processing/$CaptureId"
+    "video frames at $($effectiveSampleRate.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture)) fps and offline audio transcript prepared at collections/$CollectionSlug/contexts/$ContextSlug/$evidenceDirectoryName/media-processing/$CaptureId"
 }
 else {
-    "video frames prepared; source has no audio stream; derivatives at collections/$CollectionSlug/contexts/$ContextSlug/$evidenceDirectoryName/media-processing/$CaptureId"
+    "video frames at $($effectiveSampleRate.ToString('0.###', [Globalization.CultureInfo]::InvariantCulture)) fps prepared; source has no audio stream; derivatives at collections/$CollectionSlug/contexts/$ContextSlug/$evidenceDirectoryName/media-processing/$CaptureId"
 }
 [void](& $eventScript `
     -VaultPath $vaultRoot `
@@ -397,6 +548,7 @@ else {
     CaptureId = $CaptureId
     ProcessingPath = $targetRoot
     FrameCount = $frameFiles.Count
+    EffectiveFrameSampleFps = [Math]::Round($effectiveSampleRate, 6)
     AudioStreamCount = $audioStreams.Count
     TranscriptionState = $transcriptionState
 }

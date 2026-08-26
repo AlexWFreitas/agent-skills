@@ -37,11 +37,18 @@ Treat the directory containing this file as the vault root.
   and questions in plain text, never leak latent knowledge through the options,
   and apply capture-first routing to the returned answer.
 - Do not add a hosted service, model API, plugin, connector, or database.
+- Treat standalone logging as fast intake: persist the accepted message and
+  attachment, leave it pending, acknowledge it, and return without loading or
+  rewriting the guide, journal, questions, or state. Interpret and reconcile
+  when the user asks to process, answer, organize, checkpoint, or end the
+  session, or when a correction or urgent contradiction requires it.
 
 ## Human-facing organization
 
 - Treat `README.md`, `guide/`, `journal/`, and `open-questions.md` as the
-  notebook people read. Treat `_evidence/` as the audit and processing backend.
+  notebook people read. When visual/media material exists, treat `library/` as
+  its searchable semantic catalog and reusable reference surface. Treat
+  `_evidence/` as the audit and processing backend.
 - In an unmigrated legacy context, keep using its existing paths until the
   migration helper is authorized. Never create a partial mix of `inbox` and
   `_evidence`.
@@ -60,6 +67,13 @@ Treat the directory containing this file as the vault root.
 - Write journal entries as meaningful sessions or chapters, not one line per
   capture. Keep only useful unresolved work in `open-questions.md`; move
   resolved or scope-closed material to its canonical guide or journal note.
+- Give interpreted media natural descriptor filenames, searchable aliases, and
+  inline previews under `library/`. Reuse one stable reference page for the
+  same object, glyph, tile, symbol, font, or other recurring visual subject;
+  preserve confirmed exemplars and confusable distinctions instead of
+  recognizing it from scratch on every capture.
+- When a chat answer relies on an available screenshot or processed video
+  frame, render a relevant image inline as well as linking the note or source.
 
 At the start of a fresh task, read `second-brain.md`, announce the active
 collection/context, and stop for clarification when selection is ambiguous.

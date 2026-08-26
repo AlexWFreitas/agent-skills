@@ -36,6 +36,7 @@ Input: a locally available synthetic screenshot and caption.
 Pass:
 
 - the attachment filename begins with the capture ID;
+- a user-grounded title produces a semantic suffix and searchable keywords;
 - the original image is unchanged after interpretation;
 - direct observations, AI inferences with confidence, and unresolved details
   are separate;
@@ -177,8 +178,9 @@ Pass:
 - the combined timeline interprets both channels without erasing provenance;
 - non-speech audio, AI inference, uncertainty, and sampling limitations remain
   distinct;
-- the initial response interprets and extracts the video without asking what
-  operation the user wants or requiring a second "interpret it" message;
+- an explicit request to interpret produces an interpreted response in the
+  same turn, while a pure logged video returns quickly as pending intake
+  without asking an extra intent question;
 - no hosted transcription or model API is called.
 
 ## V17 — Video without audio and video blocked on missing transcription
@@ -273,3 +275,61 @@ Pass:
 - another capture after migration lands under `_evidence/captures/`;
 - exact migration re-entry is idempotent, while a context containing both
   `inbox/` and `_evidence/` is rejected.
+
+## V22 — Rapid intake and bounded assimilation
+
+Submit several short text, screenshot, and video entries as a burst without
+asking questions, then request a checkpoint in a later turn.
+
+Pass:
+
+- each accepted entry is durably captured as the first action and receives one
+  initial `pending` event;
+- each intake turn returns after persistence without opening media or rewriting
+  the guide, journal, open questions, or state;
+- the user can continue submitting entries without waiting for earlier LLM
+  assimilation;
+- the later checkpoint processes pending captures oldest-first in a bounded
+  batch and reports the exact remaining count;
+- no response claims that background assimilation continues after the turn.
+
+## V23 — Explicit video rate and reproducible reprocessing
+
+Process a synthetic 30 fps clip first with the automatic overview and then
+request review at 30 fps.
+
+Pass:
+
+- the manifest distinguishes source frame rate, requested sample rate, and
+  effective sample rate;
+- automatic short-clip sampling is denser than 1 fps;
+- `-FrameSampleFps 30` is passed and is not silently reduced by the default
+  frame cap;
+- an existing lower-rate derivative causes a truthful mismatch unless
+  `-Reprocess` is supplied;
+- reprocessing atomically replaces only reproducible derivatives while the
+  immutable source attachment and capture retain their hashes;
+- any explicit incompatible `MaxFrames` value reports the projected frame
+  count instead of silently dropping temporal coverage.
+
+## V24 — Semantic media and recurring visual references
+
+Use three synthetic screenshots: two show the same named object from different
+scenes, and one shows a confusable object. Include a small fictional glyph font
+where the user confirms one `W` and one `H` exemplar. Then ask about the named
+object.
+
+Pass:
+
+- semantic descriptor filenames, titles, aliases, and keywords make the media
+  searchable without opening capture-ID files one by one;
+- both same-object captures link one stable reference page and retain separate
+  immutable provenance;
+- the confusable object remains separate and its visible distinction is
+  recorded;
+- the glyph reference embeds provenance-linked examples and never promotes OCR
+  alone into a confirmed mapping;
+- image-only interpretation uses the durable pixels and existing exemplars
+  rather than depending entirely on user prose;
+- retrieval searches the human library first and renders a relevant image
+  inline in chat instead of returning only a capture-record link.

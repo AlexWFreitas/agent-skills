@@ -42,6 +42,35 @@ does not matter, the game does not expose it, or the playthrough has moved on,
 remove it from active questions while retaining its evidence and any useful
 guide fact.
 
+## Rapid play-session intake
+
+Gameplay logging must not require the player to wait for full assimilation
+after every discovery. A standalone note, screenshot, or clip supplied as a
+record is a fast intake: persist it with a short title grounded in the user's
+words when possible, leave it `pending`, acknowledge it, and return. Do not
+open or rewrite the guide, journal, open questions, or state merely to log that
+entry. Corrections and urgent contradictions remain immediate exceptions.
+
+Process pending entries when the user asks what media shows, requests
+assimilation or a checkpoint, asks a recall question that depends on them, or
+ends the play session. Work in chronological bounded batches so new intake can
+continue in a later turn without depending on the current task's history.
+
+## Game visual references
+
+Use the optional `library/` for recurring visual subjects that a player or
+future agent may need to recognize again. Good candidates include items,
+terrain, interactable objects, map symbols, teleport tiles, seed or nut forms,
+heart pieces and containers, fonts, glyphs, and visually similar variants.
+
+Create one reference page per stable subject, not one per screenshot. Preserve
+user-confirmed names and aliases, embed representative positive examples, and
+record visible differences from confusable subjects. Link later captures to
+the same stable reference ID. For image-only captures, inspect the durable
+image and existing exemplars rather than treating a missing caption as missing
+visual evidence. If identity remains uncertain, keep a candidate label without
+merging it into a confirmed reference.
+
 ## Eligible captures
 
 Typical deliberate inputs include:

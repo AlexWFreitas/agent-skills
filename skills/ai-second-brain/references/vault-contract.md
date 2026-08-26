@@ -62,6 +62,9 @@ The primary reading surface is:
 - `journal/`: meaningful chronological sessions or chapters;
 - `open-questions.md`: only actions, questions, conflicts, and hypotheses that
   are still useful to resolve.
+- `library/`, when visual or media evidence exists: searchable semantic capture
+  descriptors and reusable reference pages for objects, symbols, glyphs, UI,
+  places, and other recurring visual subjects.
 
 Use natural filenames and headings. A person must not need a capture ID to find
 an item, place, character, puzzle, decision, or event. Keep each subject in one
@@ -70,7 +73,8 @@ multiple files. Do not let `README.md` become another full knowledge dump.
 
 Do not pre-create empty subject taxonomies. `guide/index.md` and
 `journal/index.md` are the only required empty indexes. Create a guide note
-when accumulated evidence justifies it.
+when accumulated evidence justifies it. Create `library/` only when the first
+semantic media descriptor or reusable reference is justified.
 
 ## Evidence backend
 
@@ -82,6 +86,8 @@ when accumulated evidence justifies it.
 - `interpretations/` owns derived observations and inferences;
 - `media-processing/` owns reproducible video metadata, sampled frames,
   extracted audio, and machine transcripts;
+- `visual-exemplars/`, when needed, owns derived crops or comparison sheets
+  used by human-facing visual reference pages;
 - `processing-events.jsonl` is the append-only processing ledger.
 
 `attachments/` contains immutable capture-ID media. It remains outside
@@ -115,6 +121,8 @@ capture_id: CAP-...
 captured_at: 2026-01-01T12:00:00-03:00
 input_type: text
 session_id: optional-stable-session-name
+display_title: "User-grounded short title or null"
+keywords: ["searchable", "terms"]
 attachment: none
 attachment_state: none
 ---
@@ -134,8 +142,14 @@ For `voice`, the original input is the corrected transcript. Do not retain raw
 microphone audio.
 
 For screenshot or video input, copy a readable local source to
-`attachments/<capture-id><extension>` and record its vault-relative path. Use
-`attachment_state: ready`. When no local source is available, use
+`attachments/<capture-id>--<semantic-slug><extension>` when a short title can
+be grounded in the user's accepted words without inspecting the media.
+Otherwise use `attachments/<capture-id><extension>`. The capture ID always
+leads the immutable filename. Record the vault-relative path and use
+`attachment_state: ready`. A title and keywords are search metadata, not
+evidence that the named object is visually present. Never inspect or interpret
+media before the immutable copy merely to invent a filename. When no local
+source is available, use
 `attachment: none` and `attachment_state: pending-save-first`. The capture is
 durable but media evidence is incomplete until the user saves the file locally
 and the completion helper appends a linked event.
@@ -156,6 +170,11 @@ and `blocked`. Append transitions; never edit or delete prior lines. Retry logic
 must inspect the existing capture ID and events rather than duplicating the
 capture.
 
+The latest event per capture defines the assimilation queue. `pending` means
+the input is durable but still awaits any needed interpretation, semantic media
+description, reference linking, or checkpoint reconciliation. A fast intake
+may intentionally stop in this state; pending is not a failed capture.
+
 ## Screenshot and video interpretation
 
 Write `_evidence/interpretations/<capture-id>.md` only after the immutable
@@ -170,6 +189,15 @@ complete interpretation while an audio stream has not been checked for speech.
 
 Never convert an inference into a user observation or fill an evidence gap from
 latent subject knowledge in firsthand-only mode.
+
+## Semantic media library
+
+Use the optional human-facing `library/` for descriptive capture names,
+previews, aliases, recurring visual subjects, confusable examples, and
+confirmed font or glyph mappings. Derived visual crops belong under
+`_evidence/visual-exemplars/`; immutable sources remain in `attachments/`.
+Follow [visual-library.md](visual-library.md) whenever assimilating, connecting,
+or retrieving visual evidence.
 
 ## Human synthesis and clickable provenance
 
@@ -210,13 +238,15 @@ Apply explicit corrections and material state changes immediately.
 3. Add a meaningful journal entry when the evidence advances the activity;
    never mirror the raw capture ledger line by line.
 4. Refresh the short `README.md` status and navigation.
-5. Keep only genuinely useful unresolved work in `open-questions.md`. Unknown
+5. For interpreted media, create or refresh semantic capture descriptors and
+   link recurring subjects to their canonical visual reference pages.
+6. Keep only genuinely useful unresolved work in `open-questions.md`. Unknown
    trivia is not automatically an open task, and resolved or scope-closed items
    leave this file.
-6. Put human-labeled source links at the end of each changed section.
-7. Append `reconciled` or `conflicted` processing events. Never remove prior
+7. Put human-labeled source links at the end of each changed section.
+8. Append `reconciled` or `conflicted` processing events. Never remove prior
    events or captures.
-8. Update `_evidence/state.md` and the root index only after the human notes
+9. Update `_evidence/state.md` and the root index only after the human notes
    agree.
 
 ## Conflict classes

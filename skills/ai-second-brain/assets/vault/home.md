@@ -18,4 +18,6 @@ No reconciled knowledge yet.
 
 Use this page, `guide/`, and `journal/` for normal reading and search. Raw
 captures and processing records live under `_evidence/` so the audit trail does
-not become the reading experience.
+not become the reading experience. When visual or media references have been
+created, `library/` provides descriptive filenames, previews, aliases, and
+reusable recognition examples.

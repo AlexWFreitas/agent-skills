@@ -1,6 +1,6 @@
 ---
 name: ai-second-brain
-description: Capture, interpret, organize, reconcile, and retrieve user-provided text, screenshots, video, and dictated knowledge in a human-readable local Markdown vault while preserving a separate evidence backend, provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
+description: Rapidly capture, later assimilate, organize, and retrieve user-provided text, screenshots, video, and dictated knowledge in a human-readable local Markdown vault with semantic media names, reusable visual references, provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
 ---
 
 # AI Second Brain
@@ -13,11 +13,16 @@ human notebook readable without sacrificing the separate evidence trail.
 ## Required resources
 
 Read [references/vault-contract.md](references/vault-contract.md) before
-initializing, capturing, reconciling, retrieving, correcting, archiving, or
-deleting. For a game context, also read
-[references/game-playthrough.md](references/game-playthrough.md).
+initializing, manually reproducing helper behavior, reconciling, retrieving,
+correcting, archiving, deleting, or changing layout. A normal fast intake that
+uses the capture helper does not load the full contract; the helper enforces the
+mechanical write contract. For game-specific assimilation, checkpointing, or
+retrieval, also read [references/game-playthrough.md](references/game-playthrough.md).
 Before processing or interpreting video, read
 [references/video-processing.md](references/video-processing.md).
+Before visually assimilating screenshots or video frames, connecting recurring
+visual subjects, maintaining glyph/font mappings, or returning visual evidence,
+read [references/visual-library.md](references/visual-library.md).
 
 The Windows helpers provide optional deterministic mechanics without becoming
 the portable behavioral authority:
@@ -28,14 +33,15 @@ the portable behavioral authority:
   converts one intact legacy context to the human-first layout while verifying
   preserved-file hashes;
 - [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
-  creates immutable evidence and its first append-only processing event.
+  creates immutable evidence, optional user-grounded search metadata, and its
+  first append-only processing event.
 - [scripts/Complete-SecondBrainScreenshot.ps1](scripts/Complete-SecondBrainScreenshot.ps1)
   completes a pending screenshot after the user saves it locally;
 - [scripts/Complete-SecondBrainVideo.ps1](scripts/Complete-SecondBrainVideo.ps1)
   completes a pending video after the user saves it locally;
 - [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
-  uses local FFmpeg and whisper.cpp executables to prepare sampled frames and
-  a timestamped offline speech transcript;
+  uses local FFmpeg and whisper.cpp executables to prepare configurable-rate
+  sampled frames and a timestamped offline speech transcript;
 - [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
   appends later processing state without rewriting evidence.
 
@@ -118,7 +124,10 @@ For every deliberate capture in an initialized vault:
    [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
    against the vault root and pass that ID through `-CaptureId`. Pass the
    complete accepted text, corrected dictated transcript, or screenshot/video
-   message and caption without summarizing it.
+   message and caption without summarizing it. When the user's own accepted
+   words provide a clear short label, also pass a concise `-Title` and useful
+   `-Keywords`; do not inspect media or assert a visual identity merely to name
+   the immutable file.
 2. For a screenshot or video, pass a local attachment path only when Codex
    exposes one. Otherwise create the capture without a path so it remains
    `pending-save-first`.
@@ -141,20 +150,45 @@ or interpret the input.
 If pending media is later saved locally, run the matching completion helper
 with the original capture ID. Do not rewrite its capture Markdown.
 
-### Default attached-video intent
+## Separate fast intake from assimilation
 
-In an active vault, treat an attached video as a request to capture, process,
-interpret, and extract durable information unless the user explicitly asks to
-store it without interpretation. A caption is optional. Do not ask an
-uncaptioned-video sender what operation they want and do not make them send a
-second message such as "interpret it."
+Do not force every log entry through LLM interpretation and multi-file
+reconciliation before returning control. Use two lanes:
 
-After capture succeeds and a durable attachment is available, continue video
-preparation, interpretation, any immediately justified current-state update,
-and the substantive answer in the same assistant turn. The first reply to the
-video should contain the interpretation or a truthful technical limitation,
-not only a capture acknowledgement. A genuine `pending-save-first` attachment
-still requires the user to make the media locally readable.
+- **Fast intake:** a standalone note, screenshot, video, dictated discovery, or
+  burst of entries supplied as records. Persist each accepted message, leave
+  its latest event `pending`, report its short title or capture ID and
+  attachment state, then return. Do not read the guide or journal, inspect
+  media, update state, or ask a non-urgent identity question in this lane.
+- **Assimilation:** interpretation, semantic media description, recurring
+  reference linking, guide/journal updates, checkpointing, or answering a
+  question from the record. Enter this lane when the user asks to process,
+  interpret, organize, checkpoint, recall, compare, or answer; when an explicit
+  correction must update current truth; or when an urgent contradiction cannot
+  wait.
+
+`pending` is a durable assimilation queue, not a failed capture. Process it in
+chronological bounded batches and state any remainder truthfully. Do not claim
+background work will continue after the assistant turn. A later fresh task can
+drain the same queue from the append-only ledger.
+
+For a retrieval or interpretation request, capture the question first and then
+load only the pending evidence and human notes needed to answer it. For a pure
+fast intake, durable persistence is the whole operation; do not run the startup
+hydration sequence afterward.
+
+### Attached-video routing
+
+An attached video logged as an entry follows fast intake. Capture it and state
+that visual/audio assimilation is pending; do not ask an uncaptioned sender an
+extra intent question. When the user asks what the clip shows, requests
+processing, or makes the clip part of a question, capture it first and then
+prepare, interpret, and answer in the same assistant turn.
+
+For assimilation, a genuine `pending-save-first` attachment still requires the
+user to make the media locally readable. Otherwise the substantive reply must
+contain the interpretation or a truthful technical limitation, not only a
+second capture acknowledgement.
 
 ## Keep the Codex task bounded
 
@@ -188,7 +222,12 @@ not require the old task, a fork, or a chat summary as authority.
 
 ## Start or resume a task
 
-After capture-first routing, or immediately for a pure control command:
+For fast intake, let the capture helper resolve the active context from
+`second-brain.md`; announce the selected collection/context in the brief
+acknowledgement and stop. Do not hydrate the notebook merely to log another
+entry.
+
+For assimilation, retrieval, checkpointing, or a pure control command:
 
 1. Treat the directory containing the governing vault `AGENTS.md` and
    `second-brain.md` as the vault root.
@@ -217,6 +256,21 @@ Use only the active context and the captured evidence.
   `AI inferences`, and `Unresolved`. Link every inference to its supporting
   observation and label confidence. Use `inbox/interpretations/` only for an
   intact unmigrated legacy context.
+- A user caption improves provenance but is not a prerequisite for useful
+  image assimilation. Inspect the durable image itself, record visible objects
+  and text, and search the active `library/` by titles, aliases, stable
+  reference IDs, and prior visual exemplars. Do not make interpretation quality
+  depend entirely on the user's prose.
+- After visual review, create or update
+  `library/captures/<descriptive-slug>--<capture-id>.md` with a natural title,
+  searchable aliases/keywords, an embedded preview, the immutable source link,
+  and stable visual-reference links. Keep the capture-ID file immutable even
+  if this derived descriptor is later renamed or corrected.
+- Reuse one `library/references/<reference-slug>.md` page for recurring visual
+  subjects. Preserve user-confirmed names, positive exemplars, confusable
+  subjects, and visible distinctions. Use provenance-linked glyph crops and
+  confirmed mappings for custom fonts. Never merge two subjects or confirm an
+  OCR glyph from visual similarity alone.
 - For a screenshot still pending save-first, do not claim visual evidence is
   retained. Ask the user to save the image locally and keep the item blocked or
   pending.
@@ -226,6 +280,14 @@ Use only the active context and the captured evidence.
   needed; the helper reuses the active vault runtime record, the stable Codex
   local-tools installation, or `PATH`. Do not substitute a hosted
   transcription service.
+- Treat source frame rate and review sample rate as separate. The helper's
+  automatic overview is 8 fps for clips up to 30 seconds, 4 fps up to 120
+  seconds, and 2 fps for longer clips before any automatic frame-cap reduction.
+  When the user calls out an fps value because fast information may be lost,
+  treat it as the requested review rate and pass `-FrameSampleFps`; never
+  silently fall back to one frame per second. If existing derivatives use a
+  lower rate, rerun with `-Reprocess`. Report both source and effective sample
+  rates and any remaining temporal gap.
 - Interpret the prepared video using the required separate visual, onscreen
   text, audible speech, non-speech audio, combined timeline, inference, and
   unresolved layers in
@@ -263,26 +325,32 @@ that needs current cross-session knowledge, and when the user ends the activity
 session. Apply explicit corrections and material state changes immediately.
 
 1. Read pending/interpreted processing events and the minimum supporting
-   captures.
+   captures. Work oldest-first in a bounded batch and report captures still
+   pending rather than silently skipping or pretending to finish an unbounded
+   queue.
 2. Choose one canonical guide note for each durable subject. Use natural
    filenames/headings and cross-link instead of duplicating whole facts.
-3. Add a readable journal entry only for meaningful developments; never mirror
+3. For media, create searchable semantic capture descriptors and link recurring
+   objects, symbols, glyphs, or visual interpretations to one canonical page in
+   `library/references/`. Update `library/index.md` only when the library exists.
+4. Add a readable journal entry only for meaningful developments; never mirror
    the raw ledger one capture per line.
-4. Refresh the short `README.md` status and navigation without turning it into
+5. Refresh the short `README.md` status and navigation without turning it into
    another fact dump.
-5. Keep only useful unresolved work in `open-questions.md`. Unknown trivia is
+6. Keep only useful unresolved work in `open-questions.md`. Unknown trivia is
    not automatically a task; remove resolved and scope-closed items from the
    active list.
-6. Put human-labeled, clickable evidence links at the end of each changed
+7. Put human-labeled, clickable evidence links at the end of each changed
    section. When the active collection is an Obsidian vault or the user asks
    for Obsidian links, use vault-relative `[[path|label]]` wikilinks and
    `![[path|label]]` media embeds consistently. Otherwise use portable relative
    Markdown links. Keep bare capture IDs out of ordinary prose.
-7. Classify conflicts using the vault contract, then append `reconciled` or
+8. Classify conflicts using the vault contract, then append `reconciled` or
    `conflicted` events without removing prior evidence.
-8. Update `_evidence/state.md`, latest-checkpoint, and last-active metadata only
+9. Update `_evidence/state.md`, latest-checkpoint, and last-active metadata only
    after the human notes agree.
-9. Report the checkpoint, unresolved conflicts, and pending media concisely.
+10. Report the checkpoint, unresolved conflicts, and remaining pending count
+    concisely.
 
 Do not create empty guide taxonomies. A checkpoint may legitimately conclude
 that no new guide note is justified. For an intact legacy layout, retain its
@@ -297,8 +365,10 @@ change a client's excluded-file settings unless the user explicitly asks.
 Before cross-session recall, reconcile relevant pending evidence. Search only
 the active context unless a cross-context operation was explicit.
 
-- Search `README.md`, `guide/`, and `journal/` first. Use `_evidence/` to verify
-  provenance or resolve gaps, not as the ordinary answer surface.
+- Search `README.md`, `guide/`, `journal/`, and an existing `library/` first.
+  Search semantic capture titles, aliases, stable reference IDs, and exemplar
+  notes before opening capture-ID files individually. Use `_evidence/` to
+  verify provenance or resolve gaps, not as the ordinary answer surface.
 - Lead with the direct answer supported by the record.
 - Link the governing human note or use descriptive evidence links. Provide raw
   capture IDs only when the user asks for the evidence chain.
@@ -306,6 +376,12 @@ the active context unless a cross-context operation was explicit.
 - When the active record is insufficient, say exactly that. Do not use latent
   knowledge to complete, confirm, deny, hint, warn, or steer.
 - Provide the full evidence chain when requested.
+- When the answer depends on captured visual evidence and the chat surface can
+  render local media, show at least one relevant screenshot or representative
+  processed video frame inline using its absolute local path. Also link the
+  governing note or original media. Do not return only the capture record or a
+  text link when a readable local image is available. If several images are
+  relevant, choose the smallest useful set and label what each shows.
 
 Simple capture acknowledgements need not display citations unless there is a
 conflict or interpretation problem.

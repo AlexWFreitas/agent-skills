@@ -15,6 +15,10 @@ param(
 
     [string]$UserCaption,
 
+    [string]$Title,
+
+    [string[]]$Keywords,
+
     [string]$AttachmentPath,
 
     [string]$SessionId,
@@ -73,6 +77,26 @@ function Add-Utf8Line {
     }
 }
 
+function ConvertTo-SafeSlug {
+    param([string]$Value)
+
+    if (-not $Value) { return $null }
+    $normalized = $Value.Normalize([Text.NormalizationForm]::FormD)
+    $builder = New-Object Text.StringBuilder
+    foreach ($character in $normalized.ToCharArray()) {
+        $category = [Globalization.CharUnicodeInfo]::GetUnicodeCategory($character)
+        if ($category -ne [Globalization.UnicodeCategory]::NonSpacingMark) {
+            [void]$builder.Append($character)
+        }
+    }
+
+    $slug = $builder.ToString().Normalize([Text.NormalizationForm]::FormC).ToLowerInvariant()
+    $slug = [regex]::Replace($slug, '[^a-z0-9]+', '-').Trim('-')
+    if ($slug.Length -gt 64) { $slug = $slug.Substring(0, 64).Trim('-') }
+    if (-not $slug) { return $null }
+    return $slug
+}
+
 function Resolve-EvidenceRoot {
     param([Parameter(Mandatory = $true)][string]$ContextRoot)
 
@@ -120,6 +144,22 @@ if ($SessionId -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
 if ($InputType -notin @('screenshot', 'video') -and $AttachmentPath) {
     throw 'AttachmentPath is valid only for screenshot or video input.'
 }
+if ($Title) {
+    $Title = $Title.Trim()
+    if ($Title -match '[\r\n]') { throw 'Title must be a single line.' }
+    if ($Title.Length -gt 160) { throw 'Title must be 160 characters or fewer.' }
+    if (-not $Title) { $Title = $null }
+}
+$normalizedKeywords = @()
+foreach ($keyword in @($Keywords)) {
+    if (-not $keyword) { continue }
+    $normalizedKeyword = $keyword.Trim()
+    if (-not $normalizedKeyword) { continue }
+    if ($normalizedKeyword -match '[\r\n]') { throw 'Each keyword must be a single line.' }
+    if ($normalizedKeyword.Length -gt 80) { throw 'Each keyword must be 80 characters or fewer.' }
+    if ($normalizedKeyword -notin $normalizedKeywords) { $normalizedKeywords += $normalizedKeyword }
+}
+if ($normalizedKeywords.Count -gt 20) { throw 'At most 20 keywords are allowed.' }
 
 $contextRoot = Join-Path $vaultRoot "collections\$CollectionSlug\contexts\$ContextSlug"
 $evidenceRoot = Resolve-EvidenceRoot -ContextRoot $contextRoot
@@ -167,6 +207,9 @@ if (Test-Path -LiteralPath $capturePath -PathType Leaf) {
 $attachmentRelative = 'none'
 $attachmentState = 'none'
 $copiedAttachment = $null
+$attachmentStem = $CaptureId
+$titleSlug = ConvertTo-SafeSlug -Value $Title
+if ($titleSlug) { $attachmentStem = "$CaptureId--$titleSlug" }
 
 if ($InputType -in @('screenshot', 'video')) {
     if ($AttachmentPath) {
@@ -187,9 +230,9 @@ if ($InputType -in @('screenshot', 'video')) {
         if ($extension -notin $allowedExtensions) {
             throw "Unsupported $InputType extension '$extension'."
         }
-        $copiedAttachment = Join-Path $attachmentRoot "$CaptureId$extension"
+        $copiedAttachment = Join-Path $attachmentRoot "$attachmentStem$extension"
         [IO.File]::Copy($attachmentSource, $copiedAttachment, $false)
-        $attachmentRelative = "collections/$CollectionSlug/contexts/$ContextSlug/attachments/$CaptureId$extension"
+        $attachmentRelative = "collections/$CollectionSlug/contexts/$ContextSlug/attachments/$attachmentStem$extension"
         $attachmentState = 'ready'
     }
     else {
@@ -198,6 +241,8 @@ if ($InputType -in @('screenshot', 'video')) {
 }
 
 if (-not $UserCaption) { $UserCaption = 'None' }
+$displayTitleJson = if ($Title) { ConvertTo-Json -InputObject $Title -Compress } else { 'null' }
+$keywordsJson = ConvertTo-Json -InputObject @($normalizedKeywords) -Compress
 $newline = [Environment]::NewLine
 $captureContent = @(
     '---',
@@ -205,6 +250,8 @@ $captureContent = @(
     "captured_at: $capturedAt",
     "input_type: $InputType",
     "session_id: $SessionId",
+    "display_title: $displayTitleJson",
+    "keywords: $keywordsJson",
     "attachment: $attachmentRelative",
     "attachment_state: $attachmentState",
     'initial_processing_state: pending',
@@ -239,7 +286,7 @@ try {
             "$InputType evidence awaits a user-saved local file"
         }
         else {
-            'awaiting interpretation'
+            'awaiting assimilation'
         }
     }
     Add-Utf8Line -LiteralPath $ledgerPath -Line ($event | ConvertTo-Json -Compress)
@@ -254,4 +301,6 @@ catch {
     CapturePath = $capturePath
     AttachmentState = $attachmentState
     AttachmentPath = $copiedAttachment
+    DisplayTitle = $Title
+    Keywords = @($normalizedKeywords)
 }

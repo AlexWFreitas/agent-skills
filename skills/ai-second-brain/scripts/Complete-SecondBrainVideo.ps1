@@ -19,6 +19,37 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function ConvertTo-SafeSlug {
+    param([string]$Value)
+
+    if (-not $Value) { return $null }
+    $normalized = $Value.Normalize([Text.NormalizationForm]::FormD)
+    $builder = New-Object Text.StringBuilder
+    foreach ($character in $normalized.ToCharArray()) {
+        $category = [Globalization.CharUnicodeInfo]::GetUnicodeCategory($character)
+        if ($category -ne [Globalization.UnicodeCategory]::NonSpacingMark) {
+            [void]$builder.Append($character)
+        }
+    }
+    $slug = $builder.ToString().Normalize([Text.NormalizationForm]::FormC).ToLowerInvariant()
+    $slug = [regex]::Replace($slug, '[^a-z0-9]+', '-').Trim('-')
+    if ($slug.Length -gt 64) { $slug = $slug.Substring(0, 64).Trim('-') }
+    if (-not $slug) { return $null }
+    return $slug
+}
+
+function Get-AttachmentStem {
+    param([string]$CaptureText, [string]$CaptureId)
+
+    $match = [regex]::Match($CaptureText, '(?m)^display_title:\s+(.+)\s*$')
+    if (-not $match.Success -or $match.Groups[1].Value.Trim() -eq 'null') { return $CaptureId }
+    try { $displayTitle = $match.Groups[1].Value | ConvertFrom-Json }
+    catch { return $CaptureId }
+    $slug = ConvertTo-SafeSlug -Value ([string]$displayTitle)
+    if ($slug) { return "$CaptureId--$slug" }
+    return $CaptureId
+}
+
 function Resolve-EvidenceRoot {
     param([Parameter(Mandatory = $true)][string]$ContextRoot)
 
@@ -83,12 +114,13 @@ if ($extension -notin @('.mp4', '.mov', '.mkv', '.webm', '.avi', '.m4v')) {
     throw "Unsupported video extension '$extension'."
 }
 $attachmentRoot = Join-Path $contextRoot 'attachments'
-$existing = @(Get-ChildItem -LiteralPath $attachmentRoot -Filter "$CaptureId.*" -File)
+$existing = @(Get-ChildItem -LiteralPath $attachmentRoot -Filter "$CaptureId*" -File)
 if ($existing.Count -gt 0) {
     throw "Capture '$CaptureId' already has a durable attachment: $($existing[0].FullName)"
 }
 
-$destination = Join-Path $attachmentRoot "$CaptureId$extension"
+$attachmentStem = Get-AttachmentStem -CaptureText $captureText -CaptureId $CaptureId
+$destination = Join-Path $attachmentRoot "$attachmentStem$extension"
 [IO.File]::Copy($attachmentSource, $destination, $false)
 try {
     $eventScript = Join-Path $PSScriptRoot 'Add-SecondBrainProcessingEvent.ps1'
@@ -96,7 +128,7 @@ try {
         -VaultPath $vaultRoot `
         -CaptureId $CaptureId `
         -State pending `
-        -Detail "video attachment ready at collections/$CollectionSlug/contexts/$ContextSlug/attachments/$CaptureId$extension" `
+        -Detail "video attachment ready at collections/$CollectionSlug/contexts/$ContextSlug/attachments/$attachmentStem$extension" `
         -CollectionSlug $CollectionSlug `
         -ContextSlug $ContextSlug)
 }

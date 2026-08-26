@@ -73,8 +73,10 @@ After durable capture succeeds, run
 
 1. verifies exactly one immutable video attachment;
 2. records FFprobe stream/container metadata;
-3. samples reviewable frames with timestamps, increasing the interval when
-   needed to respect the frame cap;
+3. samples reviewable frames with timestamps using an adaptive overview rate
+   of 8 fps for clips up to 30 seconds, 4 fps up to 120 seconds, and 2 fps for
+   longer clips, reducing only an automatic rate when needed to respect the
+   frame cap;
 4. extracts the first audio stream without changing the source;
 5. requires offline speech transcription whenever audio exists;
 6. publishes the completed derivative directory atomically and appends a
@@ -100,10 +102,25 @@ complete or replace the missing channel with latent knowledge.
 
 ## Review visual coverage
 
-`frames.json` describes sampled coverage, not every source frame. Review frames
-in chronological order. Use a denser, bounded extraction when text appears only
-briefly, a dialogue transition falls between samples, or the user asks for
-verbatim coverage that sampling cannot support. State any remaining coverage
+Source frame rate and review sample rate are different facts. `frames.json`
+describes sampled coverage, not every source frame. Review frames in
+chronological order and report both rates from the manifest. Never claim that a
+30 fps source was reviewed at 30 fps when only 1, 4, or 8 frames per second
+were extracted.
+
+When the user supplies a desired review rate, pass it as `-FrameSampleFps`.
+The helper must honor an explicit rate up to the source rate rather than
+silently reducing it to `MaxFrames`. If the caller explicitly supplies an
+incompatible cap, stop with the projected frame count so the caller can raise
+the cap or choose a lower rate. `-FrameIntervalSeconds` remains available for
+an explicit interval and is mutually exclusive with `-FrameSampleFps`.
+
+Use a denser extraction when text appears only briefly, a dialogue transition
+falls between samples, rapid UI state changes may be material, or the user asks
+for verbatim coverage. If derivatives already exist at a lower rate, rerun with
+the requested rate plus `-Reprocess`; the helper regenerates only reproducible
+derived data from the immutable source. It must not return an old lower-rate
+sample as though the denser request succeeded. State any remaining coverage
 limitation explicitly.
 
 For long videos, work in chronological batches. Do not summarize early frames
