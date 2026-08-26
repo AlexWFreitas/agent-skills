@@ -27,10 +27,22 @@ param(
     [Alias('Hybrid')]
     [switch]$Semantic,
 
+    [switch]$LexicalOnly,
+
+    [ValidateSet('auto', 'off', 'lexical', 'hybrid')]
+    [string]$SearchMode,
+
+    [string]$EmbeddingModel,
+
     [string]$EmbeddingEndpoint,
 
+    [ValidateRange(1, 30)]
+    [int]$EmbeddingProbeTimeoutSeconds = 2,
+
     [ValidateRange(1, 600)]
-    [int]$EmbeddingTimeoutSeconds = 120
+    [int]$EmbeddingTimeoutSeconds = 120,
+
+    [switch]$NoAutoRefresh
 )
 
 $ErrorActionPreference = 'Stop'
@@ -113,45 +125,181 @@ function Resolve-SearchContext {
     }
 }
 
+function Get-SearchPreferences {
+    param(
+        [Parameter(Mandatory = $true)][string]$ContextRoot,
+        [string]$ExplicitMode,
+        [string]$ExplicitModel,
+        [string]$ExplicitEndpoint
+    )
+
+    $configuredMode = $ExplicitMode
+    $configuredModel = $ExplicitModel
+    $configuredEndpoint = $ExplicitEndpoint
+    $statePath = Join-Path $ContextRoot '_evidence\state.md'
+    if (Test-Path -LiteralPath $statePath -PathType Leaf) {
+        $state = [IO.File]::ReadAllText($statePath, [Text.Encoding]::UTF8)
+        if (-not $configuredMode) {
+            $match = [regex]::Match($state, '(?m)^Search mode:\s+`(auto|off|lexical|hybrid)`\s*$')
+            if ($match.Success) { $configuredMode = $match.Groups[1].Value }
+        }
+        if (-not $configuredModel) {
+            $match = [regex]::Match($state, '(?m)^Embedding model:\s+`([^`]+)`\s*$')
+            if ($match.Success) { $configuredModel = $match.Groups[1].Value }
+        }
+        if (-not $configuredEndpoint) {
+            $match = [regex]::Match($state, '(?m)^Embedding endpoint:\s+`([^`]+)`\s*$')
+            if ($match.Success) { $configuredEndpoint = $match.Groups[1].Value }
+        }
+    }
+    if (-not $configuredMode) { $configuredMode = 'auto' }
+    if (-not $configuredModel) { $configuredModel = 'embeddinggemma' }
+    if (-not $configuredEndpoint) { $configuredEndpoint = 'http://127.0.0.1:11434' }
+
+    return [pscustomobject]@{
+        SearchMode = $configuredMode
+        EmbeddingModel = $configuredModel
+        EmbeddingEndpoint = $configuredEndpoint
+    }
+}
+
+function Invoke-IndexQuery {
+    param(
+        [Parameter(Mandatory = $true)][string]$Python,
+        [Parameter(Mandatory = $true)][string]$Engine,
+        [Parameter(Mandatory = $true)]$ResolvedContext,
+        [Parameter(Mandatory = $true)][bool]$UseSemantic
+    )
+
+    $arguments = @(
+        $Engine,
+        'query',
+        '--vault', $ResolvedContext.VaultRoot,
+        '--collection', $ResolvedContext.Collection,
+        '--context', $ResolvedContext.Context,
+        '--index', $ResolvedContext.IndexPath,
+        '--query', $Query,
+        '--limit', [string]$Limit
+    )
+    if ($RawQuery) { $arguments += '--raw-query' }
+    if ($IncludeExternal) { $arguments += '--include-external' }
+    if ($UseSemantic) {
+        $arguments += @('--semantic', '--embedding-timeout-seconds', [string]$EmbeddingTimeoutSeconds)
+        $arguments += @('--embedding-endpoint', $preferences.EmbeddingEndpoint)
+    }
+
+    $global:LASTEXITCODE = 0
+    $output = @(& $Python @arguments 2>&1)
+    if (-not $? -or $LASTEXITCODE -ne 0) {
+        throw "FTS5 search failed: $($output -join [Environment]::NewLine)"
+    }
+    try { return (($output -join [Environment]::NewLine) | ConvertFrom-Json) }
+    catch { throw "FTS5 search returned invalid JSON: $($_.Exception.Message)" }
+}
+
 $resolved = Resolve-SearchContext `
     -RootPath $VaultPath `
     -Collection $CollectionSlug `
     -Context $ContextSlug `
     -RequestedIndexPath $IndexPath
-if (-not (Test-Path -LiteralPath $resolved.IndexPath -PathType Leaf)) {
-    throw "Search index does not exist: $($resolved.IndexPath). Build it first or use ordinary file search."
+$preferences = Get-SearchPreferences `
+    -ContextRoot $resolved.ContextRoot `
+    -ExplicitMode $SearchMode `
+    -ExplicitModel $EmbeddingModel `
+    -ExplicitEndpoint $EmbeddingEndpoint
+if ($Semantic -and $LexicalOnly) {
+    throw 'Semantic and LexicalOnly are mutually exclusive.'
 }
+$useSemantic = [bool]$Semantic -or
+    (-not $LexicalOnly -and $preferences.SearchMode -in @('auto', 'hybrid'))
+
+$ensureScript = Join-Path $PSScriptRoot 'Ensure-SecondBrainSearchIndex.ps1'
+$automaticAttempted = $false
+$automaticRefreshed = $false
+$ensureResult = $null
+
+function Invoke-AutomaticEnsure {
+    param([switch]$Force)
+
+    if ($NoAutoRefresh -or $preferences.SearchMode -eq 'off') { return $null }
+    if (-not (Test-Path -LiteralPath $ensureScript -PathType Leaf)) {
+        throw "Automatic search-index helper is missing: $ensureScript"
+    }
+    $parameters = @{
+        VaultPath = $resolved.VaultRoot
+        CollectionSlug = $resolved.Collection
+        ContextSlug = $resolved.Context
+        IndexPath = $resolved.IndexPath
+        SearchMode = $preferences.SearchMode
+        EmbeddingModel = $preferences.EmbeddingModel
+        EmbeddingProbeTimeoutSeconds = $EmbeddingProbeTimeoutSeconds
+        EmbeddingTimeoutSeconds = $EmbeddingTimeoutSeconds
+    }
+    if ($PythonPath) { $parameters.PythonPath = $PythonPath }
+    $parameters.EmbeddingEndpoint = $preferences.EmbeddingEndpoint
+    if ($IncludeExternal) { $parameters.IncludeExternal = $true }
+    if ($Force) { $parameters.ForceRebuild = $true }
+    return (& $ensureScript @parameters)
+}
+
+if (-not (Test-Path -LiteralPath $resolved.IndexPath -PathType Leaf)) {
+    if (-not $NoAutoRefresh -and $preferences.SearchMode -ne 'off') {
+        $automaticAttempted = $true
+        $ensureResult = Invoke-AutomaticEnsure -Force
+        $automaticRefreshed = $ensureResult.State -eq 'ready' -and $ensureResult.Action -eq 'rebuilt'
+    }
+    if (-not (Test-Path -LiteralPath $resolved.IndexPath -PathType Leaf)) {
+        $reason = if ($ensureResult -and $ensureResult.Reason) { " Automatic setup: $($ensureResult.Reason)" } else { '' }
+        throw "Search index does not exist: $($resolved.IndexPath). Use ordinary file search.$reason"
+    }
+}
+
 $python = Resolve-PythonExecutable -ExplicitPath $PythonPath
 $engine = Join-Path $PSScriptRoot 'second_brain_fts.py'
 if (-not (Test-Path -LiteralPath $engine -PathType Leaf)) {
     throw "Search engine script is missing: $engine"
 }
-$arguments = @(
-    $engine,
-    'query',
-    '--vault', $resolved.VaultRoot,
-    '--collection', $resolved.Collection,
-    '--context', $resolved.Context,
-    '--index', $resolved.IndexPath,
-    '--query', $Query,
-    '--limit', [string]$Limit
-)
-if ($RawQuery) { $arguments += '--raw-query' }
-if ($IncludeExternal) { $arguments += '--include-external' }
-if ($Semantic) {
-    $arguments += @('--semantic', '--embedding-timeout-seconds', [string]$EmbeddingTimeoutSeconds)
-    if ($EmbeddingEndpoint) {
-        $arguments += @('--embedding-endpoint', $EmbeddingEndpoint)
+$result = Invoke-IndexQuery `
+    -Python $python `
+    -Engine $engine `
+    -ResolvedContext $resolved `
+    -UseSemantic $useSemantic
+
+if ([bool]$result.index_stale -and
+    -not $automaticAttempted -and
+    -not $NoAutoRefresh -and
+    $preferences.SearchMode -ne 'off') {
+    $automaticAttempted = $true
+    $ensureResult = Invoke-AutomaticEnsure -Force
+    if ($ensureResult.State -eq 'ready' -and $ensureResult.Action -eq 'rebuilt') {
+        $automaticRefreshed = $true
+        $result = Invoke-IndexQuery `
+            -Python $python `
+            -Engine $engine `
+            -ResolvedContext $resolved `
+            -UseSemantic $useSemantic
     }
 }
 
-$global:LASTEXITCODE = 0
-$output = @(& $python @arguments 2>&1)
-if (-not $? -or $LASTEXITCODE -ne 0) {
-    throw "FTS5 search failed: $($output -join [Environment]::NewLine)"
+if ($useSemantic -and
+    -not [bool]$result.semantic_used -and
+    [string]$result.semantic_error -match 'no semantic embeddings' -and
+    -not $automaticAttempted -and
+    -not $NoAutoRefresh -and
+    $preferences.SearchMode -in @('auto', 'hybrid')) {
+    $automaticAttempted = $true
+    $ensureResult = Invoke-AutomaticEnsure
+    if ($ensureResult.State -eq 'ready' -and
+        $ensureResult.Action -eq 'rebuilt' -and
+        $ensureResult.SearchMode -eq 'hybrid') {
+        $automaticRefreshed = $true
+        $result = Invoke-IndexQuery `
+            -Python $python `
+            -Engine $engine `
+            -ResolvedContext $resolved `
+            -UseSemantic $true
+    }
 }
-try { $result = ($output -join [Environment]::NewLine) | ConvertFrom-Json }
-catch { throw "FTS5 search returned invalid JSON: $($_.Exception.Message)" }
 
 $results = @($result.results | ForEach-Object {
     [pscustomobject]@{
@@ -177,7 +325,7 @@ $results = @($result.results | ForEach-Object {
 if ([bool]$result.index_stale) {
     Write-Warning 'The FTS5 index is stale. Rebuild it before relying on completeness; verify every returned source directly.'
 }
-if ($Semantic -and -not [bool]$result.semantic_used) {
+if ($useSemantic -and -not [bool]$result.semantic_used) {
     Write-Warning "Semantic retrieval was unavailable and the query fell back to FTS5: $($result.semantic_error)"
 }
 if (@($results | Where-Object { $_.SourceStale -or -not $_.SourceExists }).Count -gt 0) {
@@ -196,5 +344,10 @@ if (@($results | Where-Object { $_.SourceStale -or -not $_.SourceExists }).Count
     SemanticUsed = [bool]$result.semantic_used
     SemanticError = $result.semantic_error
     EmbeddingModel = $result.embedding_model
+    ConfiguredSearchMode = $preferences.SearchMode
+    AutoRefreshAttempted = $automaticAttempted
+    AutoRefreshed = $automaticRefreshed
+    AutoRefreshMode = if ($ensureResult) { $ensureResult.SearchMode } else { $null }
+    AutoRefreshReason = if ($ensureResult) { $ensureResult.Reason } else { $null }
     Results = $results
 }

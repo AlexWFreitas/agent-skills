@@ -408,3 +408,28 @@ Pass:
   reference, resolves a conflict, or bypasses original-file verification;
 - no hosted request, vector extension, approximate-nearest-neighbor index, or
   visual embedding is introduced.
+
+## V28 — Automatic local search bootstrap and retrieval refresh
+
+Initialize an isolated context with automatic search enabled and a mock local
+runtime. Repeat once with the configured Ollama model available and once with
+the endpoint unavailable. Add a fast capture, then change an indexed Markdown
+source and perform retrieval.
+
+Pass:
+
+- initialization records `auto` plus the configured embedding model and adds
+  `/.index/` to `.gitignore` without changing prior ignore-file bytes;
+- an already installed model at the approved loopback endpoint produces a
+  hybrid FTS5 plus semantic index without a separate build command;
+- an unavailable endpoint/model produces a lexical FTS5 index without an
+  installation, download, hosted request, or failed initialization;
+- missing Python/FTS5 preserves a usable vault and reports ordinary-file
+  fallback;
+- fast capture does not load, hash, or rewrite the generated index;
+- the first later retrieval detects source staleness, atomically rebuilds the
+  configured index, reruns the query, and returns `IndexStale=false`;
+- `-NoAutoRefresh` exposes stale diagnostics without changing the index;
+- search mode `off` performs no automatic setup or refresh;
+- every authoritative capture, interpretation, guide, journal, state, media,
+  ledger, and provenance byte remains governed by the existing contract.

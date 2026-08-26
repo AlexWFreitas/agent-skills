@@ -5,6 +5,7 @@ $completeVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts
 $processVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Process-SecondBrainVideo.ps1'
 $backfillVisualLibraryScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Backfill-SecondBrainVisualLibrary.ps1'
 $buildSearchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Build-SecondBrainSearchIndex.ps1'
+$ensureSearchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Ensure-SecondBrainSearchIndex.ps1'
 $searchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Search-SecondBrainIndex.ps1'
 $searchEnginePath = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\second_brain_fts.py'
 $processingEventScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainProcessingEvent.ps1'
@@ -24,7 +25,8 @@ function New-SecondBrainFixture {
         -VaultTitle 'Test Brain' `
         -ContextTitle 'Main Test' `
         -ContextScope 'Only supplied test evidence.' `
-        -ActivityTemplate 'game-playthrough'
+        -ActivityTemplate 'game-playthrough' `
+        -SearchMode off
     Assert-Equal 'initialized' $result.State 'Fixture initialization did not report success.'
     return $vault
 }
@@ -60,6 +62,8 @@ Invoke-Test 'second brain initializer creates the portable context contract' {
         'Initializer did not explain the human/evidence boundary.'
     Assert-True ($allText.Contains('Link style: `markdown`')) `
         'Client-neutral initialization did not select portable Markdown links.'
+    Assert-True ($allText.Contains('Search mode: `off`')) `
+        'Initializer did not persist the fixture search-mode override.'
     Assert-True ($allText.Contains('[Guide](guide/index.md)')) `
         'Client-neutral initialization did not create a relative Markdown guide link.'
 }
@@ -73,7 +77,8 @@ Invoke-Test 'second brain initializer uses native links for an Obsidian collecti
         -VaultPath $vault `
         -CollectionName 'Test Subject' `
         -CollectionSlug 'test-subject' `
-        -ActivityTemplate 'game-playthrough'
+        -ActivityTemplate 'game-playthrough' `
+        -SearchMode off
     Assert-Equal 'obsidian' $result.LinkStyle 'Initializer did not auto-detect the Obsidian collection.'
 
     $context = Join-Path $collection 'contexts\main'
@@ -93,8 +98,12 @@ Invoke-Test 'second brain initializer is compatible on exact re-entry and refuse
     $vault = New-SecondBrainFixture 'second-brain-reentry'
     $indexPath = Join-Path $vault 'second-brain.md'
     $before = Get-Content -Raw $indexPath
-    $result = & $initializeScript -VaultPath $vault -CollectionName 'Test Subject' -CollectionSlug 'test-subject'
+    $result = & $initializeScript `
+        -VaultPath $vault `
+        -CollectionName 'Test Subject' `
+        -CollectionSlug 'test-subject'
     Assert-Equal 'existing-compatible' $result.State 'Compatible re-entry was not detected.'
+    Assert-Equal 'off' $result.ConfiguredSearchMode 'Compatible re-entry ignored persisted search preferences.'
     Assert-Equal $before (Get-Content -Raw $indexPath) 'Compatible re-entry rewrote the root index.'
 
     $collisionVault = Join-Path $script:TemporaryRoot 'second-brain-collision'
@@ -622,6 +631,85 @@ if ($command -eq 'query') {
 throw "Unexpected fake Python command '$command'."
 '@
 
+    $automaticVault = Join-Path $script:TemporaryRoot 'second-brain-auto-search-init'
+    [void](New-Item -ItemType Directory -Path $automaticVault -Force)
+    [IO.File]::WriteAllText(
+        (Join-Path $automaticVault '.gitignore'),
+        "preserve-this-rule`r`n",
+        (New-Object Text.UTF8Encoding($false))
+    )
+    $automatic = & $initializeScript `
+        -VaultPath $automaticVault `
+        -CollectionName 'Automatic Search' `
+        -CollectionSlug 'automatic-search' `
+        -SearchMode auto `
+        -EmbeddingModel 'fixture-embedding-model' `
+        -EmbeddingEndpoint 'http://127.0.0.1:1' `
+        -EmbeddingProbeTimeoutSeconds 1 `
+        -PythonPath $fakePython
+    Assert-Equal 'initialized' $automatic.State 'Automatic-search initialization did not preserve vault success.'
+    Assert-Equal 'ready' $automatic.SearchIndexState 'Automatic-search initialization did not build a local index.'
+    Assert-Equal 'lexical' $automatic.EffectiveSearchMode 'Unavailable Ollama did not degrade initialization to lexical FTS5.'
+    Assert-True (Test-Path -LiteralPath $automatic.SearchIndexPath -PathType Leaf) `
+        'Automatic-search initialization did not create the context index.'
+    $automaticState = Get-Content -LiteralPath (Join-Path $automaticVault 'collections\automatic-search\contexts\main\_evidence\state.md') -Raw
+    Assert-True ($automaticState.Contains('Search mode: `auto`')) 'Initializer did not persist automatic search mode.'
+    Assert-True ($automaticState.Contains('Embedding model: `fixture-embedding-model`')) `
+        'Initializer did not persist the configured embedding model.'
+    Assert-True ($automaticState.Contains('Embedding endpoint: `http://127.0.0.1:1`')) `
+        'Initializer did not persist the configured loopback embedding endpoint.'
+    $ignoreContent = [IO.File]::ReadAllText((Join-Path $automaticVault '.gitignore'))
+    Assert-True ($ignoreContent.StartsWith("preserve-this-rule`r`n")) `
+        'Automatic setup rewrote pre-existing .gitignore bytes.'
+    Assert-Equal 1 @([regex]::Matches($ignoreContent, '(?m)^/\.index/\r?$')).Count `
+        'Automatic setup did not add exactly one generated-index ignore rule.'
+    $automaticIndexHash = (Get-FileHash -LiteralPath $automatic.SearchIndexPath -Algorithm SHA256).Hash
+    [void](& $captureScript -VaultPath $automaticVault -InputType text -Content 'Fast intake must not update the index.')
+    Assert-Equal $automaticIndexHash (Get-FileHash -LiteralPath $automatic.SearchIndexPath -Algorithm SHA256).Hash `
+        'Fast capture rebuilt or rewrote the automatic search index.'
+    Remove-Item -LiteralPath $automatic.SearchIndexPath -Force
+    $recreated = & $searchIndexScript `
+        -VaultPath $automaticVault `
+        -Query 'Soft Earth' `
+        -SearchMode lexical `
+        -PythonPath $fakePython
+    Assert-True $recreated.AutoRefreshed 'Retrieval did not recreate a missing automatic index.'
+    Assert-False $recreated.IndexStale 'Retrieval returned a stale result after recreating a missing index.'
+
+    $noPythonVault = Join-Path $script:TemporaryRoot 'second-brain-auto-search-no-python'
+    $missingPython = & $initializeScript `
+        -VaultPath $noPythonVault `
+        -CollectionName 'No Python' `
+        -CollectionSlug 'no-python' `
+        -SearchMode auto `
+        -PythonPath (Join-Path $script:TemporaryRoot 'missing-python.exe') `
+        -WarningAction SilentlyContinue
+    Assert-Equal 'initialized' $missingPython.State `
+        'Unavailable optional search runtime invalidated vault initialization.'
+    Assert-Equal 'unavailable' $missingPython.SearchIndexState `
+        'Unavailable optional search runtime was not reported.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $noPythonVault 'second-brain.md') -PathType Leaf) `
+        'Unavailable optional search runtime removed the authoritative vault.'
+
+    $unicodeVault = New-SecondBrainFixture 'second-brain-auto-search-unicode-ignore'
+    $unicodeIgnorePath = Join-Path $unicodeVault '.gitignore'
+    [IO.File]::WriteAllText(
+        $unicodeIgnorePath,
+        "preserve-unicode-rule`r`n",
+        (New-Object Text.UnicodeEncoding($false, $true))
+    )
+    [void](& $ensureSearchIndexScript `
+        -VaultPath $unicodeVault `
+        -SearchMode lexical `
+        -PythonPath $fakePython `
+        -ForceRebuild)
+    $unicodeBytes = [IO.File]::ReadAllBytes($unicodeIgnorePath)
+    Assert-True ($unicodeBytes[0] -eq 0xFF -and $unicodeBytes[1] -eq 0xFE) `
+        'Automatic setup changed the existing .gitignore encoding.'
+    $unicodeIgnore = [IO.File]::ReadAllText($unicodeIgnorePath)
+    Assert-True ($unicodeIgnore.Contains("preserve-unicode-rule`r`n/.index/")) `
+        'Automatic setup did not append a readable ignore rule in the existing encoding.'
+
     $preview = & $buildSearchIndexScript `
         -VaultPath $vault `
         -PythonPath $fakePython `
@@ -695,12 +783,16 @@ throw "Unexpected fake Python command '$command'."
         'Skill does not require source verification after indexed retrieval.'
     Assert-True ($reference.Contains('one database per context')) `
         'Local-search reference does not preserve context isolation.'
+    Assert-True ($reference.Contains('Search mode: `auto`')) `
+        'Local-search reference does not document automatic search configuration.'
     Assert-True ($reference.Contains('external/` is absent by default')) `
         'Local-search reference does not exclude outside knowledge by default.'
     Assert-True ($scenarios.Contains('## V26 — Disposable context-isolated FTS5 retrieval')) `
         'Validation scenarios do not exercise the optional FTS5 layer.'
     Assert-True ($scenarios.Contains('## V27 — Optional loopback hybrid semantic retrieval')) `
         'Validation scenarios do not exercise hybrid semantic retrieval.'
+    Assert-True ($scenarios.Contains('## V28 — Automatic local search bootstrap and retrieval refresh')) `
+        'Validation scenarios do not exercise automatic local search lifecycle behavior.'
 }
 
 $realPython = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -792,10 +884,25 @@ Forbidden sibling fact.
             -VaultPath $vault `
             -Query 'soil plot planting Gasha' `
             -PythonPath $realPython.Source `
+            -NoAutoRefresh `
             -WarningAction SilentlyContinue
         Assert-True $stale.IndexStale 'Changed source did not mark the real FTS5 index stale.'
         Assert-True (@($stale.Results | Where-Object { $_.RelativePath -eq 'guide/mechanics.md' -and $_.SourceStale }).Count -gt 0) `
             'Changed returned source did not receive SourceStale=true.'
+
+        $automaticallyRefreshed = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'soil plot planting Gasha' `
+            -PythonPath $realPython.Source `
+            -SearchMode lexical
+        Assert-True $automaticallyRefreshed.AutoRefreshAttempted `
+            'Normal retrieval did not attempt to refresh the stale index.'
+        Assert-True $automaticallyRefreshed.AutoRefreshed `
+            'Normal retrieval did not atomically rebuild the stale index.'
+        Assert-False $automaticallyRefreshed.IndexStale `
+            'Automatic retrieval refresh returned the original stale result.'
+        Assert-Equal 'lexical' $automaticallyRefreshed.AutoRefreshMode `
+            'Explicit lexical automatic refresh changed retrieval mode.'
 
         $wrongContextFailed = $false
         try {
@@ -869,6 +976,17 @@ def vector(text):
     return [0.0, 0.0, 0.0, 1.0]
 
 class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path != "/api/tags":
+            self.send_error(404)
+            return
+        body = json.dumps({"models": [{"name": "fixture-embedding-model:latest"}]}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_POST(self):
         if self.path != "/api/embed":
             self.send_error(404)
@@ -910,6 +1028,42 @@ ThreadingHTTPServer(("127.0.0.1", int(sys.argv[1])), Handler).serve_forever()
                 finally { $client.Dispose() }
             }
             Assert-True $started 'Local mock embedding endpoint did not start.'
+
+            $automaticVault = Join-Path $script:TemporaryRoot 'second-brain-hybrid-auto'
+            $automatic = & $initializeScript `
+                -VaultPath $automaticVault `
+                -CollectionName 'Hybrid Automatic' `
+                -CollectionSlug 'hybrid-automatic' `
+                -SearchMode auto `
+                -EmbeddingModel 'fixture-embedding-model' `
+                -EmbeddingEndpoint $endpoint `
+                -PythonPath $realPython.Source
+            Assert-Equal 'ready' $automatic.SearchIndexState `
+                'Automatic initialization did not build a search index with available prerequisites.'
+            Assert-Equal 'hybrid' $automatic.EffectiveSearchMode `
+                'Automatic initialization did not prefer the available loopback embedding model.'
+            Assert-Equal 'fixture-embedding-model' $automatic.EmbeddingModel `
+                'Automatic initialization lost the selected local embedding model.'
+            $automaticContext = Join-Path $automaticVault 'collections\hybrid-automatic\contexts\main'
+            Set-Content -LiteralPath (Join-Path $automaticContext 'guide\time-travel.md') -Encoding UTF8 -Value @'
+# Time travel
+
+A concentric floor tile transfers the traveler between temporal states.
+'@
+            $automaticSearch = & $searchIndexScript `
+                -VaultPath $automaticVault `
+                -Query 'portal for jumping between eras' `
+                -PythonPath $realPython.Source
+            Assert-True $automaticSearch.AutoRefreshed `
+                'First retrieval after a source change did not refresh the automatic hybrid index.'
+            Assert-False $automaticSearch.IndexStale `
+                'Automatic hybrid retrieval returned a stale index after refresh.'
+            Assert-True $automaticSearch.SemanticRequested `
+                'Automatic search mode did not request semantic retrieval by default.'
+            Assert-True $automaticSearch.SemanticUsed `
+                'Automatic search mode did not use the configured local embedding model.'
+            Assert-True (@($automaticSearch.Results | Where-Object { $_.RelativePath -eq 'guide/time-travel.md' }).Count -gt 0) `
+                'Automatic hybrid retrieval missed the newly indexed guide.'
 
             $built = & $buildSearchIndexScript `
                 -VaultPath $vault `

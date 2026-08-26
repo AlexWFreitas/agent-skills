@@ -45,6 +45,12 @@ Treat the directory containing this file as the vault root.
   explicitly authorized loopback model; similarity is never evidence and may
   not merge references or resolve conflicts. The index is never evidence or
   authoritative storage.
+- The initializer configures automatic local search. Initialization and later
+  retrieval can use the configured loopback embedding model when that model is
+  already installed, fall back to lexical FTS5, or fall back to ordinary file
+  search. They must never install or pull a runtime/model automatically.
+  Refresh a stale index at retrieval or after a checkpoint, never during fast
+  intake.
 - Treat standalone logging as fast intake: persist the accepted message and
   attachment, leave it pending, acknowledge it, and return without loading or
   rewriting the guide, journal, questions, or state. Interpret and reconcile

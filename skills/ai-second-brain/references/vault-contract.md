@@ -109,8 +109,16 @@ record enough path/hash metadata to detect staleness. An index may rank and
 quote candidate source sections but never owns knowledge. Delete and rebuild it
 from authoritative Markdown whenever its scope or integrity is uncertain.
 
-An explicitly enabled local semantic layer may store normalized text embeddings
-beside the FTS5 rows in the same disposable database. Embeddings are derived
+The initializer records search mode `auto` and embedding model `embeddinggemma`
+in `_evidence/state.md`. Initialization bootstraps the disposable index when
+local prerequisites are already available. Indexed retrieval automatically
+creates a missing index or refreshes a stale one; fast intake never loads or
+updates it. Automatic mode degrades from hybrid to lexical FTS5 to ordinary
+file search without blocking capture or installing a dependency.
+
+An automatically or explicitly enabled local semantic layer may store
+normalized text embeddings beside the FTS5 rows in the same disposable
+database. Embeddings are derived
 retrieval metadata: model identity and dimension must be recorded, the same
 model must serve indexing and querying, and similarity cannot create or alter
 knowledge. Do not store visual embeddings or media bytes in this text index.

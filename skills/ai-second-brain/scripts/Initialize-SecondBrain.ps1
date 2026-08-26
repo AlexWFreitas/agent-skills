@@ -19,11 +19,26 @@ param(
     [string]$ActivityTemplate = 'game-playthrough',
 
     [ValidateSet('auto', 'markdown', 'obsidian')]
-    [string]$LinkStyle = 'auto'
+    [string]$LinkStyle = 'auto',
+
+    [ValidateSet('auto', 'off', 'lexical', 'hybrid')]
+    [string]$SearchMode = 'auto',
+
+    [string]$EmbeddingModel = 'embeddinggemma',
+
+    [string]$EmbeddingEndpoint = 'http://127.0.0.1:11434',
+
+    [ValidateRange(1, 30)]
+    [int]$EmbeddingProbeTimeoutSeconds = 2,
+
+    [string]$PythonPath
 )
 
 $ErrorActionPreference = 'Stop'
 $script:Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$script:SearchModeExplicit = $PSBoundParameters.ContainsKey('SearchMode')
+$script:EmbeddingModelExplicit = $PSBoundParameters.ContainsKey('EmbeddingModel')
+$script:EmbeddingEndpointExplicit = $PSBoundParameters.ContainsKey('EmbeddingEndpoint')
 
 function ConvertTo-Slug {
     param([Parameter(Mandatory = $true)][string]$Value)
@@ -62,6 +77,74 @@ function Write-NewUtf8File {
     }
     finally {
         if ($stream) { $stream.Dispose() }
+    }
+}
+
+function Complete-Initialization {
+    param(
+        [Parameter(Mandatory = $true)][string]$InitializationState,
+        [string]$SelectedLinkStyle
+    )
+
+    $ensureScript = Join-Path $PSScriptRoot 'Ensure-SecondBrainSearchIndex.ps1'
+    $searchResult = $null
+    if ($SearchMode -eq 'off') {
+        $searchResult = [pscustomobject]@{
+            State = 'skipped'
+            Action = 'unchanged'
+            SearchMode = 'files'
+            IndexPath = Join-Path $vaultRoot ".index\ai-second-brain\$CollectionSlug--main.sqlite"
+            EmbeddingModel = $null
+            Reason = 'Automatic local indexing is disabled for this context.'
+        }
+    }
+    else {
+        try {
+            if (-not (Test-Path -LiteralPath $ensureScript -PathType Leaf)) {
+                throw "Automatic search-index helper is missing: $ensureScript"
+            }
+            $ensureParameters = @{
+                VaultPath = $vaultRoot
+                CollectionSlug = $CollectionSlug
+                ContextSlug = 'main'
+                SearchMode = $SearchMode
+                EmbeddingModel = $EmbeddingModel
+                EmbeddingEndpoint = $EmbeddingEndpoint
+                EmbeddingProbeTimeoutSeconds = $EmbeddingProbeTimeoutSeconds
+                ForceRebuild = $true
+            }
+            if ($PythonPath) { $ensureParameters.PythonPath = $PythonPath }
+            $searchResult = & $ensureScript @ensureParameters
+        }
+        catch {
+            $searchResult = [pscustomobject]@{
+                State = 'unavailable'
+                Action = 'unchanged'
+                SearchMode = 'files'
+                IndexPath = Join-Path $vaultRoot ".index\ai-second-brain\$CollectionSlug--main.sqlite"
+                EmbeddingModel = $null
+                Reason = "Automatic search setup failed without invalidating the vault: $($_.Exception.Message)"
+            }
+        }
+    }
+
+    if ($searchResult.State -eq 'unavailable') {
+        Write-Warning $searchResult.Reason
+    }
+
+    return [pscustomobject]@{
+        State = $InitializationState
+        VaultPath = $vaultRoot
+        Collection = $CollectionSlug
+        Context = 'main'
+        LinkStyle = $SelectedLinkStyle
+        ConfiguredSearchMode = $SearchMode
+        SearchIndexState = $searchResult.State
+        SearchIndexAction = $searchResult.Action
+        EffectiveSearchMode = $searchResult.SearchMode
+        SearchIndexPath = $searchResult.IndexPath
+        EmbeddingModel = $searchResult.EmbeddingModel
+        SearchSetupReason = $searchResult.Reason
     }
 }
 
@@ -139,12 +222,21 @@ if ($existingTargets.Count -gt 0) {
     }
 
     if ($compatible) {
-        [pscustomobject]@{
-            State = 'existing-compatible'
-            VaultPath = $vaultRoot
-            Collection = $CollectionSlug
-            Context = 'main'
+        if (-not $script:SearchModeExplicit) {
+            $match = [regex]::Match($contextIndex, '(?m)^Search mode:\s+`(auto|off|lexical|hybrid)`\s*$')
+            if ($match.Success) { $SearchMode = $match.Groups[1].Value }
         }
+        if (-not $script:EmbeddingModelExplicit) {
+            $match = [regex]::Match($contextIndex, '(?m)^Embedding model:\s+`([^`]+)`\s*$')
+            if ($match.Success) { $EmbeddingModel = $match.Groups[1].Value }
+        }
+        if (-not $script:EmbeddingEndpointExplicit) {
+            $match = [regex]::Match($contextIndex, '(?m)^Embedding endpoint:\s+`([^`]+)`\s*$')
+            if ($match.Success) { $EmbeddingEndpoint = $match.Groups[1].Value }
+        }
+        Complete-Initialization `
+            -InitializationState 'existing-compatible' `
+            -SelectedLinkStyle $null
         return
     }
 
@@ -174,6 +266,9 @@ try {
         '{{LIFECYCLE}}' = 'active'
         '{{EPISTEMIC_MODE}}' = 'firsthand-only'
         '{{LINK_STYLE}}' = $resolvedLinkStyle
+        '{{SEARCH_MODE}}' = $SearchMode
+        '{{EMBEDDING_MODEL}}' = $EmbeddingModel
+        '{{EMBEDDING_ENDPOINT}}' = $EmbeddingEndpoint
         '{{GUIDE_LINK}}' = if ($resolvedLinkStyle -eq 'obsidian') {
             '[[contexts/main/guide/index|Guide]]'
         }
@@ -206,13 +301,6 @@ try {
     Write-NewUtf8File -LiteralPath $ledgerPath -Content ''
     [void]$createdFiles.Add([IO.Path]::GetFullPath($ledgerPath))
 
-    [pscustomobject]@{
-        State = 'initialized'
-        VaultPath = $vaultRoot
-        Collection = $CollectionSlug
-        Context = 'main'
-        LinkStyle = $resolvedLinkStyle
-    }
 }
 catch {
     foreach ($file in @($createdFiles) | Sort-Object Length -Descending) {
@@ -226,3 +314,7 @@ catch {
     }
     throw
 }
+
+Complete-Initialization `
+    -InitializationState 'initialized' `
+    -SelectedLinkStyle $resolvedLinkStyle

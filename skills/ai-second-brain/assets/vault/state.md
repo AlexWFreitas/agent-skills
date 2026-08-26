@@ -7,6 +7,9 @@ Activity template: `{{ACTIVITY_TEMPLATE}}`
 Lifecycle: `{{LIFECYCLE}}`  
 Epistemic mode: `{{EPISTEMIC_MODE}}`  
 Link style: `{{LINK_STYLE}}`  
+Search mode: `{{SEARCH_MODE}}`
+Embedding model: `{{EMBEDDING_MODEL}}`
+Embedding endpoint: `{{EMBEDDING_ENDPOINT}}`
 Created: `{{CREATED}}`  
 Last updated: `{{LAST_UPDATED}}`  
 Latest checkpoint: `{{LATEST_CHECKPOINT}}`

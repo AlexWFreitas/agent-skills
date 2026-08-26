@@ -23,11 +23,13 @@ embedding model, vector extension, or third-party Python package. If Python or
 FTS5 is unavailable, continue with `rg` and direct file reads; the missing index
 is never a capture or retrieval blocker.
 
-Semantic indexing is an additional opt-in mode. It calls an already available
-Ollama embedding model through a loopback-only `http://127.0.0.1`, `localhost`,
-or `::1` `/api/embed` endpoint. The helper rejects credentials, non-loopback
-hosts, HTTPS/remote endpoints, alternate paths, and redirects. Do not pull or
-install Ollama or an embedding model without explicit authorization.
+Search mode `auto` prefers semantic indexing when the configured Ollama model
+is already installed and responding locally. It calls that model through a
+loopback-only `http://127.0.0.1`, `localhost`, or `::1` `/api/embed` endpoint.
+The helper rejects credentials, non-loopback hosts, HTTPS/remote endpoints,
+alternate paths, and redirects. Automatic setup never installs, pulls, repairs,
+or starts Ollama or an embedding model; those actions still require explicit
+authorization.
 
 Keep one database per context at:
 
@@ -35,9 +37,27 @@ Keep one database per context at:
 <vault>/.index/ai-second-brain/<collection>--<context>.sqlite
 ```
 
-Add `/.index/` to the vault's `.gitignore` when the vault is versioned. The
-index is generated output, not evidence. Never place it under a context's
-`_evidence/`, `library/`, attachments, or human notebook.
+Automatic setup adds `/.index/` to the vault's `.gitignore` without rewriting
+existing bytes. The index is generated output, not evidence. Never place it
+under a context's `_evidence/`, `library/`, attachments, or human notebook.
+
+The initializer records the following preferences in `_evidence/state.md`:
+
+```text
+Search mode: `auto`
+Embedding model: `embeddinggemma`
+Embedding endpoint: `http://127.0.0.1:11434`
+```
+
+Supported modes are `auto`, `off`, `lexical`, and `hybrid`. `auto` is the
+portable default: use hybrid search when the configured already installed
+model is available, otherwise use lexical FTS5, otherwise use ordinary file
+search. The endpoint is persisted so a non-default authorized loopback port
+continues to work in later tasks. `off` disables automatic creation and refresh
+but does not make an already generated database authoritative. Legacy contexts
+without these fields
+also resolve to `auto` and `embeddinggemma` unless the caller supplies an
+override.
 
 ## Indexed material
 
@@ -62,6 +82,25 @@ build and query helpers. A normal firsthand-only search must never return
 external rows even when an older index happens to contain them.
 
 ## Build or refresh
+
+For ordinary operation, ensure the active context automatically:
+
+```powershell
+scripts/Ensure-SecondBrainSearchIndex.ps1 `
+  -VaultPath 'D:\Work\Vaults' `
+  -CollectionSlug 'oracle-of-ages' `
+  -ContextSlug 'main' `
+  -ForceRebuild
+```
+
+The ensure helper reads mode and model from `_evidence/state.md` unless the
+caller supplies an override. In `auto`, it probes only the configured loopback
+Ollama endpoint. It
+builds hybrid when the configured model is listed, falls back to lexical FTS5
+when Ollama or the model is unavailable, and reports ordinary-file fallback
+when Python/FTS5 is unavailable. It never downloads a dependency. Call it after
+initialization, after a completed checkpoint, or through the search wrapper's
+automatic refresh—not during fast intake.
 
 Preview the bounded output path:
 
@@ -111,13 +150,16 @@ The same embedding model must serve both build and query operations. Changing
 the model requires a full rebuild. If any embedding batch fails, the temporary
 database is discarded and the prior completed index remains intact.
 
-Do not rebuild during fast intake. Refresh an existing index after an explicit
-checkpoint or immediately before indexed retrieval when the query reports that
-the database is stale.
+Do not rebuild during fast intake. Initialization bootstraps the first index.
+The search wrapper automatically creates a missing index, refreshes a stale
+one, and upgrades a current lexical index when automatic semantic retrieval is
+requested and the configured model has become available. A completed
+checkpoint calls the ensure helper with `-ForceRebuild`.
 
 ## Search
 
-Use natural terms by default:
+Use natural terms by default. A context in `auto` or `hybrid` mode requests
+hybrid retrieval without needing a separate switch:
 
 ```powershell
 $search = scripts/Search-SecondBrainIndex.ps1 `
@@ -139,13 +181,15 @@ Each result contains a rank, BM25 score, absolute and relative paths, source
 tier, note kind, capture ID, title, heading, snippet, and source-staleness
 flags. Treat results as candidates, not answers.
 
-For description or synonym-heavy questions, request hybrid retrieval:
+`-Semantic` remains an explicit compatibility override for a context configured
+as `lexical`. Use `-LexicalOnly` to suppress semantic retrieval for one
+diagnostic query:
 
 ```powershell
 $search = scripts/Search-SecondBrainIndex.ps1 `
   -VaultPath 'D:\Work\Vaults' `
   -Query 'the soil patch where random reward seeds grow' `
-  -Semantic `
+  -LexicalOnly `
   -Limit 10
 ```
 
@@ -165,7 +209,9 @@ The index stores a context-tree fingerprint and each document's SHA-256. Every
 query checks the current tree fingerprint and verifies returned files against
 their indexed hash.
 
-- If `IndexStale` is true, rebuild before relying on completeness.
+- By default, the search wrapper rebuilds a stale index atomically and reruns
+  the query before returning. `-NoAutoRefresh` exposes stale state for
+  diagnostics without rebuilding.
 - If a result has `SourceStale` or its file is missing, ignore its cached
   snippet and read current files directly.
 - If rebuilding is unavailable or disproportionate, use `rg`; never answer

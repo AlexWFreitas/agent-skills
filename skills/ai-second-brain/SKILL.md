@@ -51,9 +51,14 @@ the portable behavioral authority:
 - [scripts/Build-SecondBrainSearchIndex.ps1](scripts/Build-SecondBrainSearchIndex.ps1)
   atomically builds one disposable, context-isolated SQLite FTS5 index from
   authoritative Markdown;
+- [scripts/Ensure-SecondBrainSearchIndex.ps1](scripts/Ensure-SecondBrainSearchIndex.ps1)
+  automatically bootstraps or refreshes the current context's local index. It
+  uses the configured loopback embedding model when that model is already
+  available, and it degrades to lexical FTS5 or ordinary files;
 - [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1)
-  returns ranked paths, headings, snippets, and staleness evidence while keeping
-  the source files authoritative;
+  automatically ensures a current index at retrieval time and returns ranked
+  paths, headings, snippets, and staleness evidence while keeping source files
+  authoritative;
 - [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
   appends later processing state without rewriting evidence.
 
@@ -366,9 +371,12 @@ session. Apply explicit corrections and material state changes immediately.
 10. Report the checkpoint, unresolved conflicts, and remaining pending count
     concisely.
 
-If this context already uses the optional FTS5 cache, rebuild it only after the
-checkpoint files agree. Never create or refresh it during fast intake, and do
-not introduce an index merely because a checkpoint occurred.
+After the checkpoint files agree, run
+[scripts/Ensure-SecondBrainSearchIndex.ps1](scripts/Ensure-SecondBrainSearchIndex.ps1)
+with `-ForceRebuild` unless the context records search mode `off`. Automatic
+mode uses the configured loopback embedding model when that model is already
+installed. It falls back to lexical FTS5 or ordinary files. Never create or
+refresh an index during fast intake.
 
 Do not create empty guide taxonomies. A checkpoint may legitimately conclude
 that no new guide note is justified. For an intact legacy layout, retain its
@@ -387,15 +395,15 @@ the active context unless a cross-context operation was explicit.
   Search semantic capture titles, aliases, stable reference IDs, and exemplar
   notes before opening capture-ID files individually. Use `_evidence/` to
   verify provenance or resolve gaps, not as the ordinary answer surface.
-- When a current context-local FTS5 index exists, use
-  [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1) to
-  rank candidate headings before opening files. If it is absent, stale, or
-  unavailable, rebuild it only when in scope or fall back immediately to `rg`.
-  Never let optional indexing block retrieval.
-- For vague descriptions, synonyms, or concept-level recall, request `-Semantic`
-  only when the current index was built with an explicitly authorized local
-  embedding model. Hybrid retrieval combines FTS5 and exact cosine ranks. If
-  the local model is unavailable, retain the lexical results and continue.
+- Use [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1)
+  to rank candidate headings before opening files. In search mode `auto`, the
+  wrapper creates a missing index, refreshes a stale one, and upgrades lexical
+  data to hybrid retrieval when the configured already installed loopback
+  model is available. It automatically requests hybrid retrieval; use
+  `-LexicalOnly` only for a deliberate diagnostic or constrained run.
+- If automatic setup cannot use the local model, retain lexical FTS5 results.
+  If Python or FTS5 is unavailable, fall back immediately to `rg`. Never let
+  optional indexing block retrieval, and never run it during fast intake.
 - Never auto-install or pull an embedding runtime/model, call a non-loopback
   embedding endpoint, or treat similarity as evidence. Semantic results cannot
   merge references, resolve conflicts, name images, or override exact
