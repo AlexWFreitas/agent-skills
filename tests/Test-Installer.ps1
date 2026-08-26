@@ -103,7 +103,7 @@ Invoke-Test 'public installer rejects conflicts, overlap, and catalog repository
     Assert-True ($LASTEXITCODE -ne 0) 'Catalog repository scope unexpectedly succeeded.'
 }
 
-Invoke-Test 'refresh convenience entry point uses isolated HOME and refreshes all' {
+Invoke-Test 'refresh convenience entry point uses isolated HOME and refreshes all for Codex and Gemini' {
     $isolatedHome = Join-Path $script:TemporaryRoot 'isolated-home'
     [void](New-Item -ItemType Directory -Path $isolatedHome -Force)
     $oldHome = $env:HOME
@@ -118,7 +118,8 @@ Invoke-Test 'refresh convenience entry point uses isolated HOME and refreshes al
             Assert-Equal 0 $LASTEXITCODE 'Convenience refresh failed.'
         }
         finally { Pop-Location }
-        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.agents\skills\task-discovery\SKILL.md')) 'Convenience refresh did not use isolated HOME.'
+        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.agents\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Codex destination under isolated HOME.'
+        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.gemini\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Gemini destination under isolated HOME.'
     }
     finally { $env:HOME = $oldHome; $env:USERPROFILE = $oldUserProfile }
 }

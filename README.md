@@ -9,7 +9,7 @@ Private source catalog for Agent Skills maintained primarily with Codex. The ski
 | `skills/<skill-name>/` | Canonical source for every skill. Edit skills only here. |
 | `scripts/` | Dependency-free PowerShell installer and validation tooling. |
 | `tests/` | Isolated installer and validator tests plus fixtures. |
-| `Refresh-CodexSkills.ps1` | Refresh the full catalog into Codex user scope. |
+| `Refresh-CodexSkills.ps1` | Refresh the full catalog into Codex and Gemini user scopes. |
 | `.github/workflows/validate.yml` | Run the same local checks in Windows PowerShell and PowerShell 7. |
 | `docs/discovery/` | Approved task definitions and discovery evidence. |
 
@@ -114,7 +114,8 @@ Install or refresh named skills in Codex user scope, `$HOME\.agents\skills`:
 .\scripts\Install-Skills.ps1 -Name task-discovery
 ```
 
-Refresh the complete catalog in Codex user scope:
+Refresh the complete catalog in both Codex user scope (`$HOME\.agents\skills`)
+and Gemini user scope (`$HOME\.gemini\skills`):
 
 ```powershell
 .\Refresh-CodexSkills.ps1
@@ -145,6 +146,7 @@ A custom path is only a copy destination. It does not claim that another product
 ### Refresh behavior and safety
 
 - Skill selection is explicit through `-Name` or `-All`; the convenience script supplies `-All` for you.
+- The convenience script refreshes Codex and Gemini user scopes independently and returns a failure if either destination cannot be refreshed.
 - An existing same-name destination folder is replaced automatically without prompting or `-Force`.
 - Refresh replaces the complete selected skill tree, so files removed from the catalog do not remain installed.
 - Only exact selected child folders may be replaced. The destination root, its files, and sibling skills are preserved.
