@@ -1,0 +1,7 @@
+interface:
+  display_name: "Controlled Writing Style"
+  short_description: "Write like a clear, concise, thoughtful colleague"
+  default_prompt: "Use $controlled-writing-style for this conversation and respond to: [request]."
+
+policy:
+  allow_implicit_invocation: false
