@@ -100,6 +100,15 @@ Normal human reading and search should start in `README.md`, `guide/`, and
 do not change client exclusion settings unless the user asks. Obsidian or any
 other particular client remains optional.
 
+## Disposable local indexes
+
+Optional generated search indexes live under the vault root's `.index/`
+directory, never inside a context's human notebook or evidence backend. Keep
+one index per context, exclude outside-knowledge material by default, and
+record enough path/hash metadata to detect staleness. An index may rank and
+quote candidate source sections but never owns knowledge. Delete and rebuild it
+from authoritative Markdown whenever its scope or integrity is uncertain.
+
 ## Capture identity
 
 Use an identifier shaped like:

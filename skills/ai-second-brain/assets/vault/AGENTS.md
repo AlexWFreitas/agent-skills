@@ -36,7 +36,12 @@ Treat the directory containing this file as the vault root.
   options and no auto-resolution for a blocking gate. Keep open-ended captures
   and questions in plain text, never leak latent knowledge through the options,
   and apply capture-first routing to the returned answer.
-- Do not add a hosted service, model API, plugin, connector, or database.
+- Do not add a hosted service, model API, plugin, connector, or authoritative
+  database.
+- An optional SQLite FTS5 file under `.index/` is allowed only as a disposable,
+  rebuildable retrieval cache. Keep one index per context, exclude sibling and
+  outside-knowledge material by default, and open the original Markdown before
+  answering. The index is never evidence or authoritative storage.
 - Treat standalone logging as fast intake: persist the accepted message and
   attachment, leave it pending, acknowledge it, and return without loading or
   rewriting the guide, journal, questions, or state. Interpret and reconcile

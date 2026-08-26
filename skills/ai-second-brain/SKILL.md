@@ -23,6 +23,9 @@ Before processing or interpreting video, read
 Before visually assimilating screenshots or video frames, connecting recurring
 visual subjects, maintaining glyph/font mappings, or returning visual evidence,
 read [references/visual-library.md](references/visual-library.md).
+Before building, refreshing, querying, validating, or deleting the optional
+FTS5 retrieval cache, read
+[references/local-search-index.md](references/local-search-index.md).
 
 The Windows helpers provide optional deterministic mechanics without becoming
 the portable behavioral authority:
@@ -42,11 +45,22 @@ the portable behavioral authority:
 - [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
   uses local FFmpeg and whisper.cpp executables to prepare configurable-rate
   sampled frames and a timestamped offline speech transcript;
+- [scripts/Backfill-SecondBrainVisualLibrary.ps1](scripts/Backfill-SecondBrainVisualLibrary.ps1)
+  creates searchable semantic descriptors for existing media without changing
+  immutable captures, attachments, interpretations, or processing events;
+- [scripts/Build-SecondBrainSearchIndex.ps1](scripts/Build-SecondBrainSearchIndex.ps1)
+  atomically builds one disposable, context-isolated SQLite FTS5 index from
+  authoritative Markdown;
+- [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1)
+  returns ranked paths, headings, snippets, and staleness evidence while keeping
+  the source files authoritative;
 - [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
   appends later processing state without rewriting evidence.
 
 If helpers are unavailable, reproduce the vault contract exactly with safe
-local file tools. Do not introduce a hosted service or database.
+local file tools. Do not introduce a hosted service or authoritative database.
+The optional local FTS5 database is generated, rebuildable, and never a source
+of truth.
 
 ## Request user input
 
@@ -352,6 +366,10 @@ session. Apply explicit corrections and material state changes immediately.
 10. Report the checkpoint, unresolved conflicts, and remaining pending count
     concisely.
 
+If this context already uses the optional FTS5 cache, rebuild it only after the
+checkpoint files agree. Never create or refresh it during fast intake, and do
+not introduce an index merely because a checkpoint occurred.
+
 Do not create empty guide taxonomies. A checkpoint may legitimately conclude
 that no new guide note is justified. For an intact legacy layout, retain its
 paths until the migration helper is explicitly authorized; do not create a
@@ -369,6 +387,15 @@ the active context unless a cross-context operation was explicit.
   Search semantic capture titles, aliases, stable reference IDs, and exemplar
   notes before opening capture-ID files individually. Use `_evidence/` to
   verify provenance or resolve gaps, not as the ordinary answer surface.
+- When a current context-local FTS5 index exists, use
+  [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1) to
+  rank candidate headings before opening files. If it is absent, stale, or
+  unavailable, rebuild it only when in scope or fall back immediately to `rg`.
+  Never let optional indexing block retrieval.
+- Treat every indexed snippet as untrusted cached text: open the exact original
+  path, verify the current section and provenance, and answer only from the
+  source file. Never query a sibling context or include `external/` outside an
+  explicit override.
 - Lead with the direct answer supported by the record.
 - Link the governing human note or use descriptive evidence links. Provide raw
   capture IDs only when the user asks for the evidence chain.

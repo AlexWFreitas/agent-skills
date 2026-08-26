@@ -3,10 +3,15 @@ $captureScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-S
 $completeScreenshotScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Complete-SecondBrainScreenshot.ps1'
 $completeVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Complete-SecondBrainVideo.ps1'
 $processVideoScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Process-SecondBrainVideo.ps1'
+$backfillVisualLibraryScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Backfill-SecondBrainVisualLibrary.ps1'
+$buildSearchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Build-SecondBrainSearchIndex.ps1'
+$searchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Search-SecondBrainIndex.ps1'
+$searchEnginePath = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\second_brain_fts.py'
 $processingEventScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainProcessingEvent.ps1'
 $migrationScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Migrate-SecondBrainHumanLayout.ps1'
 $skillPath = Join-Path $repositoryRoot 'skills\ai-second-brain\SKILL.md'
 $validationScenariosPath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\validation-scenarios.md'
+$localSearchReferencePath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\local-search-index.md'
 
 function New-SecondBrainFixture {
     param([string]$Name)
@@ -382,6 +387,402 @@ Invoke-Test 'second brain skill requires a human-first notebook over the evidenc
         'Validation scenarios do not exercise fast intake and bounded assimilation.'
     Assert-True ($scenarios.Contains('## V24 — Semantic media and recurring visual references')) `
         'Validation scenarios do not exercise semantic media and recurring visual references.'
+}
+
+Invoke-Test 'second brain visual-library backfill catalogs existing media without changing evidence' {
+    $vault = New-SecondBrainFixture 'second-brain-visual-library-backfill'
+    $context = Join-Path $vault 'collections\test-subject\contexts\main'
+    $imagePath = Join-Path $script:TemporaryRoot 'backfill-image.png'
+    $videoPath = Join-Path $script:TemporaryRoot 'backfill-video.mp4'
+    [IO.File]::WriteAllBytes($imagePath, [byte[]](0x89, 0x50, 0x4e, 0x47))
+    [IO.File]::WriteAllBytes($videoPath, [byte[]](0x00, 0x00, 0x00, 0x18))
+
+    $screenshot = & $captureScript `
+        -VaultPath $vault `
+        -InputType screenshot `
+        -Content 'I found a Soft Earth tile near water.' `
+        -UserCaption 'Image #1' `
+        -AttachmentPath $imagePath
+    $video = & $captureScript `
+        -VaultPath $vault `
+        -InputType video `
+        -Content 'A short character dialogue clip.' `
+        -UserCaption 'Character dialogue' `
+        -AttachmentPath $videoPath
+    $pending = & $captureScript `
+        -VaultPath $vault `
+        -InputType screenshot `
+        -Content 'A composer-only map screenshot.' `
+        -UserCaption 'Map marker still pending'
+
+    $legacyCaptureId = 'CAP-20260701-120000-legacy'
+    $legacyDateRoot = Join-Path $context '_evidence\captures\2026-07-01'
+    [void](New-Item -ItemType Directory -Path $legacyDateRoot)
+    $legacyAttachment = Join-Path $context "attachments\$legacyCaptureId.png"
+    [IO.File]::WriteAllBytes($legacyAttachment, [byte[]](0x89, 0x50, 0x4e, 0x47, 0x0d))
+    Set-Content -LiteralPath (Join-Path $legacyDateRoot "$legacyCaptureId.md") -Encoding UTF8 -Value @"
+---
+capture_id: $legacyCaptureId
+captured_at: 2026-07-01T12:00:00-03:00
+input_type: screenshot
+session_id: legacy-session
+attachment: collections/test-subject/contexts/main/attachments/$legacyCaptureId.png
+attachment_state: ready
+initial_processing_state: pending
+---
+
+# Original input
+
+Legacy screenshot with a descriptive note.
+
+# User caption
+
+Legacy object example
+"@
+
+    $interpretationPath = Join-Path $context "_evidence\interpretations\$($screenshot.CaptureId).md"
+    Set-Content -LiteralPath $interpretationPath -Encoding UTF8 -Value @'
+# Direct observations
+
+- The screenshot shows a brown Soft Earth patch beside blue water.
+
+# AI inferences
+
+- None.
+
+# Unresolved
+
+- None.
+'@
+
+    $captureHash = (Get-FileHash -LiteralPath $screenshot.CapturePath -Algorithm SHA256).Hash
+    $attachmentHash = (Get-FileHash -LiteralPath $screenshot.AttachmentPath -Algorithm SHA256).Hash
+    $preview = & $backfillVisualLibraryScript `
+        -VaultPath $vault `
+        -IncludePendingMedia `
+        -WhatIf
+    Assert-Equal 'preview' $preview.State 'Visual-library preview did not report preview state.'
+    Assert-Equal 4 $preview.MediaCaptures 'Visual-library preview lost eligible or legacy media captures.'
+    Assert-False (Test-Path -LiteralPath (Join-Path $context 'library')) `
+        'Visual-library preview wrote to the fixture.'
+
+    $result = & $backfillVisualLibraryScript `
+        -VaultPath $vault `
+        -IncludePendingMedia `
+        -Confirm:$false
+    Assert-Equal 'backfilled' $result.State 'Visual-library backfill did not report success.'
+    Assert-Equal 4 $result.DescriptorCreates 'Visual-library backfill did not create every descriptor.'
+    Assert-Equal 1 $result.PreviouslyInterpreted 'Visual-library backfill lost interpretation state.'
+    Assert-Equal 3 $result.PendingVisualReview 'Visual-library backfill did not preserve pending visual review.'
+    Assert-Equal 1 $result.PendingAttachment 'Visual-library backfill did not preserve pending attachment state.'
+
+    $descriptorRoot = Join-Path $context 'library\captures'
+    $descriptors = @(Get-ChildItem -LiteralPath $descriptorRoot -File -Filter '*.md')
+    Assert-Equal 4 $descriptors.Count 'Visual-library descriptor count is incorrect.'
+    $softEarthDescriptor = @($descriptors | Where-Object { $_.Name -match 'soft-earth' })
+    Assert-Equal 1 $softEarthDescriptor.Count 'Interpretation did not produce a semantic Soft Earth filename.'
+    $softEarthText = Get-Content -LiteralPath $softEarthDescriptor[0].FullName -Raw
+    Assert-True ($softEarthText.Contains('![The screenshot shows a brown Soft Earth patch beside blue water.](../../attachments/')) `
+        'Screenshot descriptor does not embed its immutable media.'
+    Assert-True ($softEarthText.Contains('[Interpretation](../../_evidence/interpretations/')) `
+        'Screenshot descriptor does not link its prior interpretation.'
+
+    $pendingDescriptor = Get-ChildItem -LiteralPath $descriptorRoot -File -Filter "*--$($pending.CaptureId).md"
+    $pendingText = Get-Content -LiteralPath $pendingDescriptor.FullName -Raw
+    Assert-True ($pendingText.Contains('No durable local media is available yet (`pending-save-first`).')) `
+        'Pending descriptor falsely claims a durable preview.'
+
+    Assert-Equal $captureHash (Get-FileHash -LiteralPath $screenshot.CapturePath -Algorithm SHA256).Hash `
+        'Visual-library backfill changed immutable capture evidence.'
+    Assert-Equal $attachmentHash (Get-FileHash -LiteralPath $screenshot.AttachmentPath -Algorithm SHA256).Hash `
+        'Visual-library backfill changed immutable attachment evidence.'
+    Assert-True (Test-Path -LiteralPath $result.IndexPath -PathType Leaf) 'Visual-library index was not created.'
+    Assert-Equal 1 @(Get-ChildItem -LiteralPath $descriptorRoot -File -Filter "*--$legacyCaptureId.md").Count `
+        'Visual-library backfill rejected a preserved legacy capture ID.'
+
+    $reentry = & $backfillVisualLibraryScript `
+        -VaultPath $vault `
+        -IncludePendingMedia `
+        -Confirm:$false
+    Assert-Equal 4 $reentry.DescriptorSkips 'Backfill re-entry did not preserve existing descriptors.'
+    Assert-Equal 0 $reentry.DescriptorCreates 'Backfill re-entry created duplicate descriptors.'
+
+    $curatedText = [IO.File]::ReadAllText($softEarthDescriptor[0].FullName, [Text.Encoding]::UTF8)
+    $curatedText = $curatedText.Replace('reference_ids: []', 'reference_ids: ["ref-soft-earth"]')
+    $curatedText = $curatedText.Replace(
+        'None assigned during mechanical backfill.',
+        '[ref-soft-earth](../references/soft-earth.md) — `depicts`.'
+    )
+    [IO.File]::WriteAllText($softEarthDescriptor[0].FullName, $curatedText)
+    $updated = & $backfillVisualLibraryScript `
+        -VaultPath $vault `
+        -IncludePendingMedia `
+        -UpdateExisting `
+        -Confirm:$false
+    Assert-Equal 4 $updated.DescriptorUpdates 'Update-existing did not refresh every existing descriptor.'
+    $updatedCuratedText = [IO.File]::ReadAllText($softEarthDescriptor[0].FullName, [Text.Encoding]::UTF8)
+    Assert-True ($updatedCuratedText.Contains('reference_ids: ["ref-soft-earth"]')) `
+        'Update-existing erased curated stable reference IDs.'
+    Assert-True ($updatedCuratedText.Contains('[ref-soft-earth](../references/soft-earth.md) — `depicts`.')) `
+        'Update-existing erased curated visual-reference links.'
+}
+
+Invoke-Test 'second brain FTS5 wrappers keep the index disposable and context bounded' {
+    $vault = New-SecondBrainFixture 'second-brain-fts5-wrapper'
+    $context = Join-Path $vault 'collections\test-subject\contexts\main'
+    $guidePath = Join-Path $context 'guide\mechanics.md'
+    Set-Content -LiteralPath $guidePath -Encoding UTF8 -Value @'
+# Mechanics
+
+## Soft Earth
+
+A dotted brown soil plot is used for planting Gasha Seeds.
+'@
+    $capture = & $captureScript -VaultPath $vault -InputType text -Content 'A source capture that must remain unchanged.'
+    $captureHash = (Get-FileHash -LiteralPath $capture.CapturePath -Algorithm SHA256).Hash
+
+    $fakePython = Join-Path $script:TemporaryRoot 'fake-second-brain-python.ps1'
+    Set-Content -LiteralPath $fakePython -Encoding UTF8 -Value @'
+param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ToolArguments)
+
+function Get-ToolArgument {
+    param([string]$Name)
+    $index = [Array]::IndexOf($ToolArguments, $Name)
+    if ($index -lt 0 -or $index + 1 -ge $ToolArguments.Count) { return $null }
+    return $ToolArguments[$index + 1]
+}
+
+$command = $ToolArguments[1]
+$indexPath = Get-ToolArgument '--index'
+if ($command -eq 'build') {
+    $parent = Split-Path -Parent $indexPath
+    if (-not (Test-Path -LiteralPath $parent)) { [void](New-Item -ItemType Directory -Path $parent) }
+    [IO.File]::WriteAllBytes($indexPath, [byte[]](1, 2, 3, 4))
+    [ordered]@{
+        state = 'built'
+        index_path = $indexPath
+        collection = (Get-ToolArgument '--collection')
+        context = (Get-ToolArgument '--context')
+        files = 7
+        sections = 13
+        include_evidence = (-not ($ToolArguments -contains '--exclude-evidence'))
+        include_external = ($ToolArguments -contains '--include-external')
+        tree_fingerprint = 'fixture-fingerprint'
+        sqlite_version = 'fixture-sqlite'
+    } | ConvertTo-Json -Compress
+    return
+}
+if ($command -eq 'query') {
+    $vault = Get-ToolArgument '--vault'
+    $collection = Get-ToolArgument '--collection'
+    $context = Get-ToolArgument '--context'
+    $source = Join-Path $vault "collections\$collection\contexts\$context\guide\mechanics.md"
+    [ordered]@{
+        state = 'searched'
+        index_path = $indexPath
+        index_generated_at = '2026-08-26T12:00:00-03:00'
+        index_stale = $false
+        query = (Get-ToolArgument '--query')
+        effective_query = '"soft" AND "earth"'
+        fallback_used = $false
+        results = @(
+            [ordered]@{
+                rank = 1
+                score = -0.75
+                relative_path = 'guide/mechanics.md'
+                absolute_path = $source
+                source_tier = 'human'
+                kind = 'guide'
+                capture_id = ''
+                title = 'Mechanics'
+                heading = 'Mechanics > Soft Earth'
+                snippet = 'A dotted brown [soil plot] is used for planting Gasha Seeds.'
+                source_exists = $true
+                source_stale = $false
+            }
+        )
+    } | ConvertTo-Json -Depth 6 -Compress
+    return
+}
+throw "Unexpected fake Python command '$command'."
+'@
+
+    $preview = & $buildSearchIndexScript `
+        -VaultPath $vault `
+        -PythonPath $fakePython `
+        -WhatIf
+    Assert-Equal 'preview' $preview.State 'FTS5 build preview did not report preview state.'
+    Assert-True ($preview.IndexPath -match '[\\/]\.index[\\/]ai-second-brain[\\/]test-subject--main\.sqlite$') `
+        'FTS5 default path is not context-specific under the vault index root.'
+    Assert-False (Test-Path -LiteralPath $preview.IndexPath) 'FTS5 preview created an index file.'
+
+    $built = & $buildSearchIndexScript `
+        -VaultPath $vault `
+        -PythonPath $fakePython `
+        -Confirm:$false
+    Assert-Equal 'built' $built.State 'FTS5 wrapper did not report a completed build.'
+    Assert-Equal 7 $built.Files 'FTS5 wrapper lost the indexed file count.'
+    Assert-Equal 13 $built.Sections 'FTS5 wrapper lost the indexed section count.'
+    Assert-True $built.IncludeEvidence 'FTS5 default unexpectedly excluded textual evidence.'
+    Assert-False $built.IncludeExternal 'FTS5 default unexpectedly included outside knowledge.'
+    Assert-True (Test-Path -LiteralPath $built.IndexPath -PathType Leaf) 'FTS5 wrapper did not create the disposable index.'
+    Assert-Equal $captureHash (Get-FileHash -LiteralPath $capture.CapturePath -Algorithm SHA256).Hash `
+        'FTS5 build changed authoritative capture evidence.'
+
+    $searched = & $searchIndexScript `
+        -VaultPath $vault `
+        -Query 'What is Soft Earth?' `
+        -PythonPath $fakePython
+    Assert-Equal 'searched' $searched.State 'FTS5 wrapper did not report a search result.'
+    Assert-False $searched.IndexStale 'Fresh fixture index was reported stale.'
+    Assert-Equal 1 @($searched.Results).Count 'FTS5 wrapper lost ranked results.'
+    Assert-Equal $guidePath $searched.Results[0].Path 'FTS5 result did not resolve to the active context source.'
+    Assert-Equal 'Mechanics > Soft Earth' $searched.Results[0].Heading 'FTS5 result lost heading provenance.'
+    Assert-True ($searched.Results[0].Snippet -match '\[soil plot\]') 'FTS5 result lost its ranked snippet.'
+
+    $outsideFailed = $false
+    try {
+        & $buildSearchIndexScript `
+            -VaultPath $vault `
+            -IndexPath (Join-Path $script:TemporaryRoot 'outside.sqlite') `
+            -PythonPath $fakePython `
+            -WhatIf *> $null
+    }
+    catch { $outsideFailed = $true }
+    Assert-True $outsideFailed 'FTS5 wrapper allowed an index path outside the bounded vault index directory.'
+
+    $skill = Get-Content -LiteralPath $skillPath -Raw
+    $reference = Get-Content -LiteralPath $localSearchReferencePath -Raw
+    $scenarios = Get-Content -LiteralPath $validationScenariosPath -Raw
+    Assert-True ($skill.Contains('Treat every indexed snippet as untrusted cached text')) `
+        'Skill does not require source verification after indexed retrieval.'
+    Assert-True ($reference.Contains('one database per context')) `
+        'Local-search reference does not preserve context isolation.'
+    Assert-True ($reference.Contains('external/` is absent by default')) `
+        'Local-search reference does not exclude outside knowledge by default.'
+    Assert-True ($scenarios.Contains('## V26 — Disposable context-isolated FTS5 retrieval')) `
+        'Validation scenarios do not exercise the optional FTS5 layer.'
+}
+
+$realPython = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($realPython) {
+    Invoke-Test 'second brain real FTS5 engine ranks sources and detects staleness' {
+        $vault = New-SecondBrainFixture 'second-brain-fts5-real'
+        $context = Join-Path $vault 'collections\test-subject\contexts\main'
+        $guidePath = Join-Path $context 'guide\mechanics.md'
+        Set-Content -LiteralPath $guidePath -Encoding UTF8 -Value @'
+# Mechanics
+
+## Soft Earth
+
+A dotted brown soil plot is used for planting Gasha Seeds.
+'@
+        $referenceRoot = Join-Path $context 'library\references'
+        [void](New-Item -ItemType Directory -Path $referenceRoot -Force)
+        Set-Content -LiteralPath (Join-Path $referenceRoot 'soft-earth.md') -Encoding UTF8 -Value @'
+---
+reference_id: ref-soft-earth
+preferred_name: "Soft Earth"
+aliases: ["planting plot", "soft soil"]
+---
+
+# Soft Earth
+
+The plot accepts a Gasha Seed.
+'@
+        Set-Content -LiteralPath (Join-Path $context 'external\outside.md') -Encoding UTF8 -Value @'
+# Outside note
+
+Outside spoiler phrase.
+'@
+        $sibling = Join-Path $vault 'collections\test-subject\contexts\sibling'
+        [void](New-Item -ItemType Directory -Path $sibling -Force)
+        Set-Content -LiteralPath (Join-Path $sibling 'README.md') -Encoding UTF8 -Value @'
+# Sibling
+
+Forbidden sibling fact.
+'@
+        $sourceHash = (Get-FileHash -LiteralPath $guidePath -Algorithm SHA256).Hash
+
+        $built = & $buildSearchIndexScript `
+            -VaultPath $vault `
+            -PythonPath $realPython.Source `
+            -IncludeExternal `
+            -Confirm:$false
+        Assert-Equal 'built' $built.State 'Real FTS5 engine did not build an index.'
+        Assert-True ($built.Files -ge 8) 'Real FTS5 engine indexed too few Markdown files.'
+        Assert-True ($built.Sections -gt $built.Files) 'Real FTS5 engine did not create heading-aligned sections.'
+        Assert-True (Test-Path -LiteralPath $built.IndexPath -PathType Leaf) 'Real FTS5 database is missing.'
+        Assert-Equal $sourceHash (Get-FileHash -LiteralPath $guidePath -Algorithm SHA256).Hash `
+            'Real FTS5 build changed an authoritative guide file.'
+
+        $search = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'soil plot planting Gasha' `
+            -PythonPath $realPython.Source
+        Assert-False $search.IndexStale 'Fresh real FTS5 index was reported stale.'
+        Assert-True (@($search.Results).Count -gt 0) 'Real FTS5 search returned no result.'
+        Assert-True (@($search.Results | Where-Object { $_.RelativePath -eq 'guide/mechanics.md' }).Count -gt 0) `
+            'Real FTS5 search did not return the governing guide.'
+        Assert-True (@($search.Results | Where-Object { $_.Snippet -match '\[soil\]|\[plot\]|\[planting\]' }).Count -gt 0) `
+            'Real FTS5 search did not mark matching snippet terms.'
+
+        $externalHidden = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'outside spoiler phrase' `
+            -PythonPath $realPython.Source
+        Assert-Equal 0 @($externalHidden.Results).Count `
+            'Normal FTS5 query leaked explicitly indexed outside knowledge.'
+        $externalVisible = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'outside spoiler phrase' `
+            -PythonPath $realPython.Source `
+            -IncludeExternal
+        Assert-True (@($externalVisible.Results | Where-Object { $_.SourceTier -eq 'external' }).Count -eq 1) `
+            'Scoped FTS5 query did not return explicitly included outside knowledge.'
+
+        $siblingLeak = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'forbidden sibling fact' `
+            -PythonPath $realPython.Source
+        Assert-Equal 0 @($siblingLeak.Results).Count 'FTS5 index leaked a sibling-context fact.'
+
+        Add-Content -LiteralPath $guidePath -Encoding UTF8 -Value "`r`nA later source edit."
+        [IO.File]::SetLastWriteTimeUtc($guidePath, [DateTime]::UtcNow.AddSeconds(2))
+        $stale = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'soil plot planting Gasha' `
+            -PythonPath $realPython.Source `
+            -WarningAction SilentlyContinue
+        Assert-True $stale.IndexStale 'Changed source did not mark the real FTS5 index stale.'
+        Assert-True (@($stale.Results | Where-Object { $_.RelativePath -eq 'guide/mechanics.md' -and $_.SourceStale }).Count -gt 0) `
+            'Changed returned source did not receive SourceStale=true.'
+
+        $wrongContextFailed = $false
+        try {
+            & $searchIndexScript `
+                -VaultPath $vault `
+                -CollectionSlug 'test-subject' `
+                -ContextSlug 'sibling' `
+                -IndexPath $built.IndexPath `
+                -Query 'Soft Earth' `
+                -PythonPath $realPython.Source *> $null
+        }
+        catch { $wrongContextFailed = $_.Exception.Message -match 'different context' }
+        Assert-True $wrongContextFailed 'FTS5 query accepted an index belonging to another context.'
+
+        $rebuilt = & $buildSearchIndexScript `
+            -VaultPath $vault `
+            -PythonPath $realPython.Source `
+            -IncludeExternal `
+            -Confirm:$false
+        $freshAgain = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'soil plot planting Gasha' `
+            -PythonPath $realPython.Source
+        Assert-False $freshAgain.IndexStale 'Atomic rebuild did not refresh the real FTS5 index.'
+        Assert-Equal $rebuilt.IndexPath $freshAgain.IndexPath 'Rebuild changed the context-specific index identity.'
+    }
 }
 
 Invoke-Test 'second brain capture retry with an existing capture id does not duplicate evidence' {

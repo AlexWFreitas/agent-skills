@@ -27,6 +27,15 @@ is justified. Use the active context's selected Markdown or Obsidian link
 style. Original captures and attachments remain immutable; library notes and
 derived crops may be renamed or corrected with provenance.
 
+For an existing context, run
+`scripts/Backfill-SecondBrainVisualLibrary.ps1 -WhatIf` first, then run it
+without `-WhatIf` after reviewing the scope. It creates one semantic descriptor
+per eligible screenshot or video and rebuilds `library/index.md`; use
+`-IncludePendingMedia` to catalog captures whose local attachment is still
+pending. It never invents recurring reference IDs: curate those from supported
+evidence after the mechanical backfill. Existing descriptors are preserved
+unless `-UpdateExisting` is supplied.
+
 ## Semantic capture descriptors
 
 After durable media has been visually reviewed, create one descriptor at

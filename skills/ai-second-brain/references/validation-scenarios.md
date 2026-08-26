@@ -333,3 +333,51 @@ Pass:
   rather than depending entirely on user prose;
 - retrieval searches the human library first and renders a relevant image
   inline in chat instead of returning only a capture-record link.
+
+## V25 — Existing-context visual-library backfill
+
+Populate an isolated context with interpreted screenshots, uninterpreted
+screenshots and videos, one pending-save-first capture, and immutable source
+hashes. Preview and then run `Backfill-SecondBrainVisualLibrary.ps1`.
+
+Pass:
+
+- `-WhatIf` reports the exact descriptor scope without creating `library/`;
+- each eligible media capture gets one semantic descriptor and one index row;
+- preserved historical capture IDs that predate the current four-hex suffix
+  contract remain catalogable without weakening new-capture validation;
+- prior interpretations yield interpreted status and useful titles, while
+  media without interpretations remains explicitly pending visual review;
+- pending-save-first captures never claim a durable preview;
+- rerunning without `-UpdateExisting` preserves existing descriptors and does
+  not create duplicates;
+- rerunning with `-UpdateExisting` refreshes mechanical metadata while
+  preserving curated `reference_ids` and visual-reference links;
+- capture, attachment, interpretation, and processing-event bytes remain
+  unchanged;
+- recurring reference IDs are not invented by the mechanical helper and are
+  curated only from supported active-context evidence afterward.
+
+## V26 — Disposable context-isolated FTS5 retrieval
+
+In an isolated vault, create two contexts with distinct synthetic facts plus an
+`external/` note, build an index for only the active context, and run natural
+and raw queries. Then change one indexed source file.
+
+Pass:
+
+- `-WhatIf` reports the bounded `.index/ai-second-brain/` target without writing;
+- the completed SQLite file is outside the context and no authoritative source
+  hash changes;
+- one heading-aligned row or more is indexed per eligible Markdown file;
+- title, alias, heading, and body matches return ranked paths and snippets;
+- query metadata is parameterized and cannot select a sibling-context index;
+- `external/` is absent by default and remains excluded from normal queries
+  even when explicitly indexed for a scoped override;
+- changing, adding, or deleting an eligible source makes `IndexStale` true, and
+  a changed returned file is marked `SourceStale`;
+- the agent opens and verifies the original Markdown before answering;
+- deleting the SQLite file loses no capture, interpretation, guide, journal,
+  reference, media, ledger, or provenance content;
+- missing Python/FTS5 or a missing/stale index falls back to ordinary file
+  search rather than blocking retrieval.
