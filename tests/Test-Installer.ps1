@@ -119,7 +119,7 @@ Invoke-Test 'refresh convenience entry point uses isolated HOME and refreshes al
         }
         finally { Pop-Location }
         Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.agents\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Codex destination under isolated HOME.'
-        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.gemini\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Gemini destination under isolated HOME.'
+        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.gemini\config\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Gemini destination under isolated HOME.'
     }
     finally { $env:HOME = $oldHome; $env:USERPROFILE = $oldUserProfile }
 }

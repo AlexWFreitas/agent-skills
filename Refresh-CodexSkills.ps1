@@ -12,7 +12,7 @@ try {
     $powerShellExecutable = (Get-Process -Id $PID).Path
     $destinations = @(
         (Join-Path $HOME '.agents\skills'),
-        (Join-Path $HOME '.gemini\skills')
+        (Join-Path $HOME '.gemini\config\skills')
     )
 
     foreach ($destination in $destinations) {

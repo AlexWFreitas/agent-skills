@@ -115,7 +115,7 @@ Install or refresh named skills in Codex user scope, `$HOME\.agents\skills`:
 ```
 
 Refresh the complete catalog in both Codex user scope (`$HOME\.agents\skills`)
-and Gemini user scope (`$HOME\.gemini\skills`):
+and Gemini user scope (`$HOME\.gemini\config\skills`):
 
 ```powershell
 .\Refresh-CodexSkills.ps1
