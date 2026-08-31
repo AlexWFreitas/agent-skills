@@ -10,7 +10,7 @@ param(
     [string]$CaptureId,
 
     [Parameter(Mandatory = $true)]
-    [ValidateSet('pending', 'interpreted', 'reconciled', 'conflicted', 'blocked')]
+    [ValidateSet('pending', 'interpreted', 'reconciled', 'conflicted', 'blocked', 'scope-closed')]
     [string]$State,
 
     [Parameter(Mandatory = $true)]

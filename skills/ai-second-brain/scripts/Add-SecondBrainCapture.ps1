@@ -27,7 +27,14 @@ param(
 
     [string]$ContextSlug,
 
-    [string]$CaptureId
+    [string]$CaptureId,
+
+    [string]$CaptureGroupId,
+
+    [string]$PreviousCaptureGroupId,
+
+    [ValidateRange(1, 1000)]
+    [int]$GroupOrdinal = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -182,6 +189,21 @@ else {
     $CaptureId = 'CAP-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' +
         ([guid]::NewGuid().ToString('N').Substring(0, 4))
 }
+if ($CaptureGroupId) {
+    if ($CaptureGroupId -notmatch '^GRP-\d{8}-\d{6}-[a-f0-9]{4}$') {
+        throw 'CaptureGroupId must match GRP-YYYYMMDD-HHMMSS-ffff.'
+    }
+}
+else {
+    $CaptureGroupId = 'GRP' + $CaptureId.Substring(3)
+}
+if ($PreviousCaptureGroupId -and
+    $PreviousCaptureGroupId -notmatch '^GRP-\d{8}-\d{6}-[a-f0-9]{4}$') {
+    throw 'PreviousCaptureGroupId must match GRP-YYYYMMDD-HHMMSS-ffff.'
+}
+if ($PreviousCaptureGroupId -eq $CaptureGroupId) {
+    throw 'PreviousCaptureGroupId cannot equal CaptureGroupId.'
+}
 
 $captureDate = $CaptureId.Substring(4, 8)
 $captureDateDirectory = '{0}-{1}-{2}' -f
@@ -198,6 +220,7 @@ if (Test-Path -LiteralPath $capturePath -PathType Leaf) {
     [pscustomobject]@{
         State = 'existing-capture'
         CaptureId = $CaptureId
+        CaptureGroupId = $CaptureGroupId
         CapturePath = $capturePath
         AttachmentState = 'unchanged'
     }
@@ -243,6 +266,7 @@ if ($InputType -in @('screenshot', 'video')) {
 if (-not $UserCaption) { $UserCaption = 'None' }
 $displayTitleJson = if ($Title) { ConvertTo-Json -InputObject $Title -Compress } else { 'null' }
 $keywordsJson = ConvertTo-Json -InputObject @($normalizedKeywords) -Compress
+$previousCaptureGroupValue = if ($PreviousCaptureGroupId) { $PreviousCaptureGroupId } else { 'null' }
 $newline = [Environment]::NewLine
 $captureContent = @(
     '---',
@@ -250,6 +274,9 @@ $captureContent = @(
     "captured_at: $capturedAt",
     "input_type: $InputType",
     "session_id: $SessionId",
+    "capture_group_id: $CaptureGroupId",
+    "group_ordinal: $GroupOrdinal",
+    "previous_capture_group_id: $previousCaptureGroupValue",
     "display_title: $displayTitleJson",
     "keywords: $keywordsJson",
     "attachment: $attachmentRelative",
@@ -298,6 +325,9 @@ catch {
 [pscustomobject]@{
     State = 'captured'
     CaptureId = $CaptureId
+    CaptureGroupId = $CaptureGroupId
+    PreviousCaptureGroupId = $PreviousCaptureGroupId
+    GroupOrdinal = $GroupOrdinal
     CapturePath = $capturePath
     AttachmentState = $attachmentState
     AttachmentPath = $copiedAttachment

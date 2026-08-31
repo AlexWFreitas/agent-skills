@@ -18,6 +18,8 @@ correcting, archiving, deleting, or changing layout. A normal fast intake that
 uses the capture helper does not load the full contract; the helper enforces the
 mechanical write contract. For game-specific assimilation, checkpointing, or
 retrieval, also read [references/game-playthrough.md](references/game-playthrough.md).
+For capture groups, relations, state, maps, exhaustive lists, reconciliation,
+or completion, also read [references/state-tracking.md](references/state-tracking.md).
 Before processing or interpreting video, read
 [references/video-processing.md](references/video-processing.md).
 Before visually assimilating screenshots or video frames, connecting recurring
@@ -30,37 +32,22 @@ FTS5 retrieval cache, read
 The Windows helpers provide optional deterministic mechanics without becoming
 the portable behavioral authority:
 
-- [scripts/Initialize-SecondBrain.ps1](scripts/Initialize-SecondBrain.ps1)
-  initializes a vault and first context;
-- [scripts/Migrate-SecondBrainHumanLayout.ps1](scripts/Migrate-SecondBrainHumanLayout.ps1)
-  converts one intact legacy context to the human-first layout while verifying
-  preserved-file hashes;
-- [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
-  creates immutable evidence, optional user-grounded search metadata, and its
-  first append-only processing event.
-- [scripts/Complete-SecondBrainScreenshot.ps1](scripts/Complete-SecondBrainScreenshot.ps1)
-  completes a pending screenshot after the user saves it locally;
-- [scripts/Complete-SecondBrainVideo.ps1](scripts/Complete-SecondBrainVideo.ps1)
-  completes a pending video after the user saves it locally;
-- [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
-  uses local FFmpeg and whisper.cpp executables to prepare configurable-rate
-  sampled frames and a timestamped offline speech transcript;
-- [scripts/Backfill-SecondBrainVisualLibrary.ps1](scripts/Backfill-SecondBrainVisualLibrary.ps1)
-  creates searchable semantic descriptors for existing media without changing
-  immutable captures, attachments, interpretations, or processing events;
-- [scripts/Build-SecondBrainSearchIndex.ps1](scripts/Build-SecondBrainSearchIndex.ps1)
-  atomically builds one disposable, context-isolated SQLite FTS5 index from
-  authoritative Markdown;
-- [scripts/Ensure-SecondBrainSearchIndex.ps1](scripts/Ensure-SecondBrainSearchIndex.ps1)
-  automatically bootstraps or refreshes the current context's local index. It
-  uses the configured loopback embedding model when that model is already
-  available, and it degrades to lexical FTS5 or ordinary files;
-- [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1)
-  automatically ensures a current index at retrieval time and returns ranked
-  paths, headings, snippets, and staleness evidence while keeping source files
-  authoritative;
-- [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
-  appends later processing state without rewriting evidence.
+- [Initialize-SecondBrain.ps1](scripts/Initialize-SecondBrain.ps1) and
+  [Migrate-SecondBrainHumanLayout.ps1](scripts/Migrate-SecondBrainHumanLayout.ps1)
+  create or safely migrate the human-first layout;
+- [Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1), the two
+  `Complete-SecondBrain*` helpers, and
+  [Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
+  own immutable intake, save-first completion, and processing events;
+- [Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1) and
+  [Backfill-SecondBrainVisualLibrary.ps1](scripts/Backfill-SecondBrainVisualLibrary.ps1)
+  prepare local media and its semantic catalog;
+- the `Build`, `Ensure`, and `Search-SecondBrainIndex` helpers own the optional
+  disposable context-isolated search cache;
+- [Add-SecondBrainRelation.ps1](scripts/Add-SecondBrainRelation.ps1),
+  [Test-SecondBrainContext.ps1](scripts/Test-SecondBrainContext.ps1), and
+  [Manage-SecondBrainReconciliationLock.ps1](scripts/Manage-SecondBrainReconciliationLock.ps1)
+  own durable relations, read-only auditing, and serialized reconciliation.
 
 If helpers are unavailable, reproduce the vault contract exactly with safe
 local file tools. Do not introduce a hosted service or authoritative database.
@@ -139,14 +126,17 @@ subject-matter interpretation.
 For every deliberate capture in an initialized vault:
 
 1. Before the first helper call, choose one candidate capture ID in the vault
-   contract format. As the first agent action, run
+   contract format. Also choose one capture-group ID for the complete accepted
+   message. Reuse that group across every attachment, assign attachment order
+   through `-GroupOrdinal`, and pass the known immediately preceding group
+   through `-PreviousCaptureGroupId`. As the first agent action, run
    [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
-   against the vault root and pass that ID through `-CaptureId`. Pass the
-   complete accepted text, corrected dictated transcript, or screenshot/video
-   message and caption without summarizing it. When the user's own accepted
-   words provide a clear short label, also pass a concise `-Title` and useful
-   `-Keywords`; do not inspect media or assert a visual identity merely to name
-   the immutable file.
+   against the vault root and pass the candidate and group IDs through
+   `-CaptureId` and `-CaptureGroupId`. Pass the complete accepted text,
+   corrected dictated transcript, or screenshot/video message and caption
+   without summarizing it. When the user's own accepted words provide a clear
+   short label, also pass a concise `-Title` and useful `-Keywords`; do not
+   inspect media or assert a visual identity merely to name the immutable file.
 2. For a screenshot or video, pass a local attachment path only when Codex
    exposes one. Otherwise create the capture without a path so it remains
    `pending-save-first`.
@@ -169,6 +159,12 @@ or interpret the input.
 If pending media is later saved locally, run the matching completion helper
 with the original capture ID. Do not rewrite its capture Markdown.
 
+When the accepted text says "the previous message", "that item", or another
+direct predecessor reference, resolve the durable preceding capture group
+before semantic similarity. Record a supported connection through
+[scripts/Add-SecondBrainRelation.ps1](scripts/Add-SecondBrainRelation.ps1).
+Do not jump to an older similar event when the predecessor group is known.
+
 ## Separate fast intake from assimilation
 
 Do not force every log entry through LLM interpretation and multi-file
@@ -182,9 +178,10 @@ reconciliation before returning control. Use two lanes:
 - **Assimilation:** interpretation, semantic media description, recurring
   reference linking, guide/journal updates, checkpointing, or answering a
   question from the record. Enter this lane when the user asks to process,
-  interpret, organize, checkpoint, recall, compare, or answer; when an explicit
-  correction must update current truth; or when an urgent contradiction cannot
-  wait.
+  interpret, organize, checkpoint, recall, compare, or answer, or when an urgent
+  contradiction cannot wait. In an explicitly selected fast-intake mode, an
+  ordinary correction is captured and related immediately but waits for
+  requested assimilation before multi-file synthesis.
 
 `pending` is a durable assimilation queue, not a failed capture. Process it in
 chronological bounded batches and state any remainder truthfully. Do not claim
@@ -231,6 +228,10 @@ bounded activity session, not for the lifetime of a collection.
   `unverified` truthfully, and return the rollover instruction.
 - Never describe a bridge, shell, or helper as failed unless an actual tool
   result establishes that failure. Lost working context is not a tool error.
+- During assimilation, run the context auditor. A session-size warning is a
+  proactive rollover signal even when platform compaction has not occurred.
+  Finish or verify the accepted capture and continue in a genuinely fresh task;
+  do not keep a long-lived playthrough task merely because it still responds.
 - If the user submits another deliberate input before following the rollover
   instruction, capture it first under these same bounds, then repeat the
   rollover instruction. Never use task saturation to leave an accepted input
@@ -253,9 +254,11 @@ For assimilation, retrieval, checkpointing, or a pure control command:
 2. Read `second-brain.md` and announce the active collection/context before
    substantive work in a fresh task.
 3. Read the selected context's `README.md`, `open-questions.md`, relevant guide
-   and journal notes, `_evidence/state.md`, processing events, and only the
-   minimum captures needed. In an unmigrated legacy context, read the old
-   `context.md` and `open-items.md` instead.
+   and journal notes, optional `trackers/`, `_evidence/state.md`, processing and
+   relation events, and only the minimum captures needed. Run
+   [scripts/Test-SecondBrainContext.ps1](scripts/Test-SecondBrainContext.ps1)
+   before relying on a pending count or completeness claim. In an unmigrated
+   legacy context, read the old `context.md` and `open-items.md` instead.
 4. Stop for confirmation when no active context exists, multiple contexts
    plausibly match, or the opening input is a control command indicating
    another subject. When two or three known contexts plausibly match, use
@@ -290,6 +293,11 @@ Use only the active context and the captured evidence.
   subjects, and visible distinctions. Use provenance-linked glyph crops and
   confirmed mappings for custom fonts. Never merge two subjects or confirm an
   OCR glyph from visual similarity alone.
+- If a screenshot contains a map, record a stable map-anchor tracker row with
+  the visible era, label, selected cell or normalized marker position,
+  viewport, landmarks, confidence, and capture provenance even when the caption
+  does not call the position important. Connect the event with `located-at`;
+  same region without a supported cell or landmark match remains a candidate.
 - For a screenshot still pending save-first, do not claim visual evidence is
   retained. Ask the user to save the image locally and keep the item blocked or
   pending.
@@ -341,35 +349,26 @@ non-urgent connections to the next checkpoint.
 
 Reconcile when the user asks to organize/checkpoint, before answering a query
 that needs current cross-session knowledge, and when the user ends the activity
-session. Apply explicit corrections and material state changes immediately.
+session. Outside explicit fast-intake mode, apply explicit corrections and
+material state changes immediately.
 
-1. Read pending/interpreted processing events and the minimum supporting
-   captures. Work oldest-first in a bounded batch and report captures still
-   pending rather than silently skipping or pretending to finish an unbounded
-   queue.
-2. Choose one canonical guide note for each durable subject. Use natural
-   filenames/headings and cross-link instead of duplicating whole facts.
-3. For media, create searchable semantic capture descriptors and link recurring
-   objects, symbols, glyphs, or visual interpretations to one canonical page in
-   `library/references/`. Update `library/index.md` only when the library exists.
-4. Add a readable journal entry only for meaningful developments; never mirror
-   the raw ledger one capture per line.
-5. Refresh the short `README.md` status and navigation without turning it into
-   another fact dump.
-6. Keep only useful unresolved work in `open-questions.md`. Unknown trivia is
-   not automatically a task; remove resolved and scope-closed items from the
-   active list.
-7. Put human-labeled, clickable evidence links at the end of each changed
-   section. When the active collection is an Obsidian vault or the user asks
-   for Obsidian links, use vault-relative `[[path|label]]` wikilinks and
-   `![[path|label]]` media embeds consistently. Otherwise use portable relative
-   Markdown links. Keep bare capture IDs out of ordinary prose.
-8. Classify conflicts using the vault contract, then append `reconciled` or
-   `conflicted` events without removing prior evidence.
-9. Update `_evidence/state.md`, latest-checkpoint, and last-active metadata only
-   after the human notes agree.
-10. Report the checkpoint, unresolved conflicts, and remaining pending count
-    concisely.
+1. Acquire the reconciliation lock and audit fresh source bytes. Another live
+   owner blocks shared-note, tracker, state, and index writes.
+2. Read pending/interpreted events, relations, trackers, and minimum supporting
+   captures oldest-first; report any bounded-batch remainder.
+3. Update one canonical guide home, meaningful journal chapter, short home,
+   and only still-useful open questions. Unknown trivia is not automatically a task.
+4. Create media descriptors and connect recurring subjects to canonical visual
+   references when media is interpreted.
+5. Update canonical tracker rows and append supported state relations using the
+   invariants in [references/state-tracking.md](references/state-tracking.md).
+6. Add human-labeled, clickable evidence links, classify conflicts, and append
+   a truthful latest event for every capture in the processed batch. For
+   Obsidian, use vault-relative `[[path|label]]` wikilinks.
+7. Keep `_evidence/state.md` to current metadata and one latest checkpoint;
+   put history in the ledgers or journal.
+8. Audit again, report exact coverage/pending counts, rebuild the search index
+   only after consistency succeeds, and release the owned lock in `finally`.
 
 After the checkpoint files agree, run
 [scripts/Ensure-SecondBrainSearchIndex.ps1](scripts/Ensure-SecondBrainSearchIndex.ps1)
@@ -390,6 +389,12 @@ change a client's excluded-file settings unless the user explicitly asks.
 
 Before cross-session recall, reconcile relevant pending evidence. Search only
 the active context unless a cross-context operation was explicit.
+
+If the request asks for all, every, complete, exhaustive, remaining, pending,
+or a checklist for a bounded kind, follow the exhaustive protocol in
+[references/state-tracking.md](references/state-tracking.md). Enumerate the
+complete relevant tracker and latest ledger states, account for every row, and
+report coverage. Never label top-ranked search results exhaustive.
 
 - Search `README.md`, `guide/`, `journal/`, and an existing `library/` first.
   Search semantic capture titles, aliases, stable reference IDs, and exemplar
@@ -469,6 +474,13 @@ service, embedding service, or hosted database.
 
 At session end, reconcile, write the checkpoint, and report unresolved,
 conflicted, or pending items.
+
+Before marking a context completed, run
+[scripts/Test-SecondBrainContext.ps1](scripts/Test-SecondBrainContext.ps1) with
+`-CompletionGate`. Every capture must have a truthful latest disposition.
+Append `scope-closed` when the user explicitly declines processing or closes an
+item; a later duplicate or summary does not silently close the original
+capture. Do not claim completion or zero pending when the audit disagrees.
 
 Archive only by changing lifecycle to `archived`; preserve evidence.
 

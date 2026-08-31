@@ -196,6 +196,8 @@ def _classify(relative: Path) -> tuple[str, str]:
         return "human", "guide"
     if parts[0] == "journal":
         return "human", "journal"
+    if parts[0] == "trackers":
+        return "human", "state-tracker"
     if parts[0] == "library" and len(parts) > 1 and parts[1] == "references":
         return "human", "visual-reference"
     if parts[0] == "library" and len(parts) > 1 and parts[1] == "captures":

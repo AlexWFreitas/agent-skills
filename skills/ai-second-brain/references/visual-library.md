@@ -52,6 +52,12 @@ Do not copy the full interpretation into the descriptor. Its job is naming,
 search, preview, and routing. Keep the capture ID at the end of the filename so
 two similarly titled captures remain distinct.
 
+For a map screenshot, also create or connect a stable map-anchor tracker row as
+defined in [state-tracking.md](state-tracking.md). Descriptor prose such as
+"lower-right area" is not a durable position key by itself. Record visible
+era, label, grid cell or normalized marker coordinates, viewport, landmarks,
+confidence, and source capture; use `located-at` for supported connections.
+
 ## Canonical recurring references
 
 Create one page under `library/references/` for each stable recurring visual
@@ -76,6 +82,11 @@ User naming or correction is authoritative evidence. A clear active-context
 match may support a proposed identity, but visual similarity alone does not
 authorize merging two references. Keep ambiguous candidates separate until
 the evidence or user resolves them.
+
+Map anchors are positional identities rather than ordinary visual-subject
+references. Same map label does not establish the same anchor. Reuse an anchor
+only when marker geometry and supported landmarks match; otherwise create a
+candidate relation or a separate anchor.
 
 ## Derived exemplars and crops
 
@@ -113,6 +124,11 @@ media, render at least one relevant original screenshot or representative
 processed frame inline with an absolute local path. Also link the governing
 human note or original media. Use the smallest useful image set and label what
 each image demonstrates.
+
+For "same position", "where was this", or exhaustive location questions,
+enumerate the relevant map-anchor tracker rows before using descriptor search.
+Search ranking may find candidate maps but cannot establish complete positional
+coverage.
 
 ## Checkpoint maintenance
 

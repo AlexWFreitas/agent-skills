@@ -39,6 +39,8 @@ guide/
 journal/
   index.md
   <date-or-session-name>.md
+trackers/                  # optional after recurring state exists
+  <natural-subject-name>.md
 open-questions.md
 _evidence/
   state.md
@@ -50,6 +52,7 @@ _evidence/
   media-processing/
     <capture-id>/
   processing-events.jsonl
+  relations.jsonl          # new vaults; created lazily for older v2 contexts
 attachments/
 external/
 ```
@@ -62,6 +65,9 @@ The primary reading surface is:
 - `journal/`: meaningful chronological sessions or chapters;
 - `open-questions.md`: only actions, questions, conflicts, and hypotheses that
   are still useful to resolve.
+- `trackers/`, when recurring state or exhaustive enumeration is justified:
+  human-readable current-state tables with stable IDs, lifecycle state, and
+  opening/closing evidence;
 - `library/`, when visual or media evidence exists: searchable semantic capture
   descriptors and reusable reference pages for objects, symbols, glyphs, UI,
   places, and other recurring visual subjects.
@@ -89,6 +95,9 @@ semantic media descriptor or reusable reference is justified.
 - `visual-exemplars/`, when needed, owns derived crops or comparison sheets
   used by human-facing visual reference pages;
 - `processing-events.jsonl` is the append-only processing ledger.
+- `relations.jsonl` is the append-only provenance-backed relation ledger for
+  capture groups, corrections, item identity, source, parent/child lifecycle,
+  and map anchors.
 
 `attachments/` contains immutable capture-ID media. It remains outside
 `_evidence/` so existing vault-relative attachment links stay stable and human
@@ -144,6 +153,9 @@ capture_id: CAP-...
 captured_at: 2026-01-01T12:00:00-03:00
 input_type: text
 session_id: optional-stable-session-name
+capture_group_id: GRP-...
+group_ordinal: 1
+previous_capture_group_id: null
 display_title: "User-grounded short title or null"
 keywords: ["searchable", "terms"]
 attachment: none
@@ -160,6 +172,13 @@ Caption supplied with a screenshot, or `None`.
 ```
 
 Allowed input types are `text`, `voice`, `screenshot`, and `video`.
+
+One accepted message has one `GRP-YYYYMMDD-HHMMSS-ffff` capture-group ID.
+Every attachment created from that message reuses the group and receives a
+unique ordinal in attachment order. When known, record the immediately
+preceding accepted message's group so deictic phrases such as "the previous
+message" have a durable target. Old captures without group fields remain
+valid.
 
 For `voice`, the original input is the corrected transcript. Do not retain raw
 microphone audio.
@@ -189,14 +208,40 @@ Append one compact JSON object per line:
 ```
 
 Allowed normal states are `pending`, `interpreted`, `reconciled`, `conflicted`,
-and `blocked`. Append transitions; never edit or delete prior lines. Retry logic
-must inspect the existing capture ID and events rather than duplicating the
-capture.
+`blocked`, and `scope-closed`. `scope-closed` is terminal for evidence the user
+explicitly declines to process or removes from the active objective. Append
+transitions; never edit or delete prior lines. Retry logic must inspect the
+existing capture ID and events rather than duplicating the capture.
 
 The latest event per capture defines the assimilation queue. `pending` means
 the input is durable but still awaits any needed interpretation, semantic media
 description, reference linking, or checkpoint reconciliation. A fast intake
 may intentionally stop in this state; pending is not a failed capture.
+
+## Capture relations and current state
+
+Follow [state-tracking.md](state-tracking.md) whenever chat order, item state,
+quantity, source attribution, parent/child lifecycle, map position, or an
+exhaustive list matters.
+
+Relations are append-only JSON objects shaped like:
+
+```json
+{"relation_id":"REL-...","recorded_at":"2026-01-01T12:00:01-03:00","source_id":"RING-001","relation":"obtained-from","target_id":"CHEST-004","status":"active","evidence_capture_ids":["CAP-..."],"supersedes_relation_id":null,"detail":"Directly stated source"}
+```
+
+Use stable current-state tracker rows under `trackers/` only when recurring
+state or bounded enumeration justifies them. Trackers have one canonical row
+per instance or task, unique IDs, explicit state and quantity, optional parent
+and map-anchor IDs, and capture-backed opening/closing evidence. They are
+ordinary Markdown and are indexed as human notes. Do not create a second
+AI-only prose copy of the same current state.
+
+Identity and source attribution are independent. A batch may resolve an item
+count without assigning each result to its source. Likewise, a confirmed
+harvest updates its parent planting even when the reward remains unidentified.
+The relation and tracker invariants are validated by the read-only context
+auditor.
 
 ## Screenshot and video interpretation
 
@@ -212,6 +257,12 @@ complete interpretation while an audio stream has not been checked for speech.
 
 Never convert an inference into a user observation or fill an evidence gap from
 latent subject knowledge in firsthand-only mode.
+
+When media contains a map, record a stable `map-anchor` tracker row from the
+visible era, label, selected grid cell or normalized marker position, viewport,
+landmarks, confidence, and source capture even when the caption does not call
+the position important. Same area without a supported cell or landmark match
+does not establish the same location.
 
 ## Semantic media library
 
@@ -254,23 +305,39 @@ may remain chat-only.
 
 Reconcile when the user asks to organize or checkpoint, before a question that
 needs current cross-session knowledge, and when the activity session ends.
-Apply explicit corrections and material state changes immediately.
+Outside an explicitly selected fast-intake mode, apply explicit corrections
+and material state changes immediately.
 
-1. Read pending/interpreted events and the minimum supporting captures.
-2. Choose one canonical guide home for each durable subject and update it.
-3. Add a meaningful journal entry when the evidence advances the activity;
+1. Acquire the cooperative reconciliation lock. Another live owner may
+   continue independent fast capture but prevents shared-note, tracker, state,
+   and index writes.
+2. Run `scripts/Test-SecondBrainContext.ps1`, then read pending/interpreted
+   events, relations, trackers, and the minimum supporting captures.
+3. Choose one canonical guide home for each durable subject and update it.
+4. Add a meaningful journal entry when the evidence advances the activity;
    never mirror the raw capture ledger line by line.
-4. Refresh the short `README.md` status and navigation.
-5. For interpreted media, create or refresh semantic capture descriptors and
+5. Refresh the short `README.md` status and navigation.
+6. For interpreted media, create or refresh semantic capture descriptors and
    link recurring subjects to their canonical visual reference pages.
-6. Keep only genuinely useful unresolved work in `open-questions.md`. Unknown
+7. Update the canonical tracker row and append supported relations for every
+   current-state or lifecycle change.
+8. Keep only genuinely useful unresolved work in `open-questions.md`. Unknown
    trivia is not automatically an open task, and resolved or scope-closed items
    leave this file.
-7. Put human-labeled source links at the end of each changed section.
-8. Append `reconciled` or `conflicted` processing events. Never remove prior
-   events or captures.
-9. Update `_evidence/state.md` and the root index only after the human notes
-   agree.
+9. Put human-labeled source links at the end of each changed section.
+10. Append `reconciled`, `conflicted`, `blocked`, or `scope-closed` processing
+   events for every capture in the processed batch. Never remove prior events
+   or captures.
+11. Keep `_evidence/state.md` compact and current. Historical checkpoint deltas
+   belong in the ledgers or journal. Update it and the root index only after the
+   human notes and trackers agree.
+12. Rerun the auditor, report exact coverage and pending counts, rebuild the
+   disposable search index after consistency succeeds, and release the exact
+   owned reconciliation lock in a `finally` path.
+
+At completion, use the auditor's completion gate. A completed lifecycle cannot
+silently retain pending captures or pending-save-first attachments. A later
+summary or duplicate capture does not terminally disposition an earlier source.
 
 ## Conflict classes
 

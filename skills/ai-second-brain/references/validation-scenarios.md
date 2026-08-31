@@ -433,3 +433,131 @@ Pass:
 - search mode `off` performs no automatic setup or refresh;
 - every authoritative capture, interpretation, guide, journal, state, media,
   ledger, and provenance byte remains governed by the existing contract.
+
+## V29 — Durable predecessor-group resolution
+
+Capture three synthetic messages in order: a planted-resource harvest, an
+unrelated treasure-chest item, and "identify the item from the previous
+message." Give a multi-image message one shared group with unique ordinals.
+
+Pass:
+
+- every new capture records one valid capture-group ID;
+- companion attachments share that group and have unique ordinals;
+- the appraisal group records the chest group as its predecessor;
+- `identified-as` resolves the chest instance only;
+- semantic similarity to the older harvest does not create an
+  `obtained-from` or `harvest-of` relation.
+
+## V30 — Batch identification updates quantity without false attribution
+
+Create four unidentified item instances from four sources, then capture one
+batch appraisal naming four results without mapping names to sources.
+
+Pass:
+
+- the aggregate unidentified quantity becomes zero;
+- none of the four sources remains an active appraisal task;
+- source-to-name assignments remain explicitly unresolved;
+- the assistant does not recreate four individually named source relations;
+- an exhaustive pending-appraisal query reports zero and states the unresolved
+  provenance separately.
+
+## V31 — Planting, harvest, and map-anchor lifecycle
+
+Capture a planting with a map screenshot, a later harvest with the same map
+cell, and a confusable chest in the same named area but a different cell.
+
+Pass:
+
+- the map screenshot receives an era-aware stable anchor even when the caption
+  does not mention position;
+- the planting and harvest are separate tracker rows linked once by
+  `harvest-of` and `located-at`;
+- the planting moves out of planted/harvest-pending state;
+- the harvest ID appears only once;
+- the same-area chest remains separate because its marker geometry differs.
+
+## V32 — Exhaustive list coverage
+
+Spread ten synthetic Secret rows across old captures, guide notes, and current
+trackers so an ordinary limited search ranks only eight. Request every Secret
+and remaining action.
+
+Pass:
+
+- the assistant enumerates the complete tracker, not only search results;
+- all ten rows are listed or explicitly excluded with a reason;
+- discovery, recipient, handoff, reward, return password, and return use remain
+  distinct stages;
+- the response reports `10 discovered, 10 accounted for`;
+- if no bounded universe exists, the response says `not verified exhaustive`.
+
+## V33 — Quick-capture correction stays quick
+
+Select explicit quick-capture mode, capture an unidentified item, then correct
+its identity without requesting assimilation.
+
+Pass:
+
+- the correction is durably captured first;
+- a mechanically known `supersedes` or `resolves` relation is appended;
+- guide, journal, trackers, state, library, and search index bytes do not
+  change in the correction turn;
+- the correction is applied to current state at the next requested checkpoint;
+- an urgent contradiction still follows immediate reconciliation rules.
+
+## V34 — Completion gate dispositions every capture
+
+Create several pending story notes, one interpreted ending video, one optional
+credits video the user declines to process, and one future-play hypothesis.
+Then request playthrough completion.
+
+Pass:
+
+- the ending video does not silently close the earlier story captures;
+- every story capture receives its own reconciled/conflicted/blocked state;
+- the declined credits video becomes `scope-closed`, not pending;
+- the future-play hypothesis is reconciled or scope-closed according to the
+  user's decision;
+- the completion audit reports zero pending captures and pending attachments
+  before lifecycle becomes completed;
+- a false hand-written zero-pending claim fails the audit.
+
+## V35 — Serialized reconciliation and proactive rollover
+
+In an isolated fixture, let one owner acquire the reconciliation lock while a
+second owner attempts checkpoint writes. Also create one session exceeding the
+auditor's capture-group warning threshold.
+
+Pass:
+
+- the second owner cannot acquire the live lock or edit shared notes;
+- independent fast capture remains possible;
+- only the exact owner can release the lock;
+- stale takeover requires the explicit takeover switch after external task
+  state is checked;
+- the oversized session produces a rollover warning before platform
+  compaction;
+- the fresh task resumes from durable groups, relations, trackers, and latest
+  events.
+
+## V36 — Context consistency and human-surface drift audit
+
+Create a fixture with a duplicate tracker ID, a confirmed identification whose
+row still says unidentified, a harvest whose parent still says planted, one
+broken link, oversized state/history, and active-sounding index text under a
+completed lifecycle.
+
+Pass:
+
+- `Test-SecondBrainContext.ps1` performs no writes;
+- duplicate IDs, invalid state/relations, missing evidence, broken links, and a
+  completed context with pending captures are consistency errors;
+- oversized state/home/journal surfaces, repeated checkpoint deltas, stale
+  completed-context wording, and oversized capture sessions are visible
+  warnings;
+- media marked interpreted/reconciled without an interpretation or descriptor
+  is an error;
+- tracker rows remain human-readable Markdown and no database becomes
+  authoritative.

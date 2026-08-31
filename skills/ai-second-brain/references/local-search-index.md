@@ -181,6 +181,13 @@ Each result contains a rank, BM25 score, absolute and relative paths, source
 tier, note kind, capture ID, title, heading, snippet, and source-staleness
 flags. Treat results as candidates, not answers.
 
+Search results are never an enumeration boundary. For requests containing
+`all`, `every`, `complete`, `exhaustive`, `remaining`, `pending`, or
+`checklist`, enumerate the complete relevant current-state tracker and latest
+processing-event set as defined in [state-tracking.md](state-tracking.md).
+Search may locate evidence for an enumerated row, but a result limit or ranking
+cannot prove coverage.
+
 `-Semantic` remains an explicit compatibility override for a context configured
 as `lexical`. Use `-LexicalOnly` to suppress semantic retrieval for one
 diagnostic query:
@@ -230,6 +237,10 @@ not bypass either check or combine contexts into one database.
 Semantic similarity is retrieval metadata, not evidence. It must not merge
 visual references, resolve conflicts, identify an object, promote an inference,
 or add a fact. Open and verify original files exactly as with lexical results.
+
+It also cannot establish that a list is exhaustive or that a pending queue is
+empty. Use the read-only context auditor and tracker enumeration for those
+claims.
 
 This implementation embeds text only. It does not compare screenshot pixels or
 create visual vectors. Keep visual recognition grounded in the curated visual

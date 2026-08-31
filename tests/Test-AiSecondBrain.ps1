@@ -9,10 +9,14 @@ $ensureSearchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scr
 $searchIndexScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Search-SecondBrainIndex.ps1'
 $searchEnginePath = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\second_brain_fts.py'
 $processingEventScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainProcessingEvent.ps1'
+$relationScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-SecondBrainRelation.ps1'
+$contextAuditScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Test-SecondBrainContext.ps1'
+$reconciliationLockScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Manage-SecondBrainReconciliationLock.ps1'
 $migrationScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Migrate-SecondBrainHumanLayout.ps1'
 $skillPath = Join-Path $repositoryRoot 'skills\ai-second-brain\SKILL.md'
 $validationScenariosPath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\validation-scenarios.md'
 $localSearchReferencePath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\local-search-index.md'
+$stateTrackingReferencePath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\state-tracking.md'
 
 function New-SecondBrainFixture {
     param([string]$Name)
@@ -47,6 +51,7 @@ Invoke-Test 'second brain initializer creates the portable context contract' {
         (Join-Path $context '_evidence\interpretations'),
         (Join-Path $context '_evidence\media-processing'),
         (Join-Path $context '_evidence\processing-events.jsonl'),
+        (Join-Path $context '_evidence\relations.jsonl'),
         (Join-Path $context 'attachments'),
         (Join-Path $context 'external')
     )) {
@@ -372,7 +377,7 @@ Invoke-Test 'second brain skill requires a human-first notebook over the evidenc
     $skill = Get-Content -Raw $skillPath
     $scenarios = Get-Content -Raw $validationScenariosPath
 
-    Assert-True ($skill.Contains('Choose one canonical guide note for each durable subject.')) `
+    Assert-True ($skill.Contains('Update one canonical guide home')) `
         'Skill does not require one canonical human home per subject.'
     Assert-True ($skill.Contains('human-labeled, clickable evidence links')) `
         'Skill does not require readable section-level provenance.'
@@ -808,6 +813,20 @@ if ($realPython) {
 
 A dotted brown soil plot is used for planting Gasha Seeds.
 '@
+        $trackerRoot = Join-Path $context 'trackers'
+        [void](New-Item -ItemType Directory -Path $trackerRoot)
+        Set-Content -LiteralPath (Join-Path $trackerRoot 'tasks.md') -Encoding UTF8 -Value @(
+            '---',
+            'tracker_schema: ai-second-brain/v1',
+            'tracker_type: game-state',
+            '---',
+            '',
+            '# Tasks',
+            '',
+            '| ID | Kind | Label | State | Quantity | Parent ID | Map anchor | Opened by | Closed by | Notes |',
+            '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+            '| `TASK-MOONKEY` | task | MoonKey gate | open | 1 |  |  |  |  | Stateful tracker token |'
+        )
         $referenceRoot = Join-Path $context 'library\references'
         [void](New-Item -ItemType Directory -Path $referenceRoot -Force)
         Set-Content -LiteralPath (Join-Path $referenceRoot 'soft-earth.md') -Encoding UTF8 -Value @'
@@ -857,6 +876,14 @@ Forbidden sibling fact.
             'Real FTS5 search did not return the governing guide.'
         Assert-True (@($search.Results | Where-Object { $_.Snippet -match '\[soil\]|\[plot\]|\[planting\]' }).Count -gt 0) `
             'Real FTS5 search did not mark matching snippet terms.'
+
+        $trackerSearch = & $searchIndexScript `
+            -VaultPath $vault `
+            -Query 'MoonKey gate stateful tracker token' `
+            -PythonPath $realPython.Source
+        Assert-True (@($trackerSearch.Results | Where-Object {
+            $_.RelativePath -eq 'trackers/tasks.md' -and $_.Kind -eq 'state-tracker'
+        }).Count -gt 0) 'Real FTS5 search did not classify current-state trackers.'
 
         $externalHidden = & $searchIndexScript `
             -VaultPath $vault `
@@ -1185,8 +1212,8 @@ Invoke-Test 'second brain skill bounds compaction recovery and task rollover' {
 
     Assert-True ($skill.Contains('Before the first helper call, choose one candidate capture ID')) `
         'Skill does not preallocate a capture ID before persistence.'
-    Assert-True ($skill.Contains('pass that ID through `-CaptureId`')) `
-        'Skill does not require the candidate ID on the first helper call.'
+    Assert-True ($skill.Contains('`-CaptureId` and `-CaptureGroupId`')) `
+        'Skill does not require candidate capture and group IDs on the first helper call.'
     Assert-True ($skill.Contains('retry the exact capture at most once with that ID')) `
         'Skill does not bound uncertain-result capture retries.'
     Assert-True ($skill.Contains('Treat the first context compaction in a task as a rollover signal')) `
@@ -1215,6 +1242,252 @@ Invoke-Test 'second brain processing events append without rewriting capture evi
 
     $ledger = Get-Content (Join-Path $vault 'collections\test-subject\contexts\main\_evidence\processing-events.jsonl')
     Assert-Equal 2 @($ledger).Count 'Processing history did not remain append-only.'
+}
+
+Invoke-Test 'second brain capture groups and relations preserve predecessor identity' {
+    $vault = New-SecondBrainFixture 'second-brain-groups-relations'
+    $imagePath = Join-Path $script:TemporaryRoot 'group-image.png'
+    [IO.File]::WriteAllBytes($imagePath, [byte[]](0x89, 0x50, 0x4e, 0x47))
+    $sourceGroup = 'GRP-20260726-180000-abcd'
+    $first = & $captureScript `
+        -VaultPath $vault `
+        -InputType screenshot `
+        -Content 'Two views of one chest.' `
+        -AttachmentPath $imagePath `
+        -CaptureId 'CAP-20260726-180000-a001' `
+        -CaptureGroupId $sourceGroup `
+        -GroupOrdinal 1 `
+        -SessionId 'session-groups'
+    $second = & $captureScript `
+        -VaultPath $vault `
+        -InputType screenshot `
+        -Content 'Two views of one chest.' `
+        -AttachmentPath $imagePath `
+        -CaptureId 'CAP-20260726-180000-a002' `
+        -CaptureGroupId $sourceGroup `
+        -GroupOrdinal 2 `
+        -SessionId 'session-groups'
+    $resultGroup = 'GRP-20260726-180100-b001'
+    $identified = & $captureScript `
+        -VaultPath $vault `
+        -InputType text `
+        -Content 'The item from the previous message was identified.' `
+        -CaptureId 'CAP-20260726-180100-b001' `
+        -CaptureGroupId $resultGroup `
+        -PreviousCaptureGroupId $sourceGroup `
+        -SessionId 'session-groups'
+
+    Assert-Equal $sourceGroup $first.CaptureGroupId 'First companion capture lost the shared group.'
+    Assert-Equal $sourceGroup $second.CaptureGroupId 'Second companion capture lost the shared group.'
+    Assert-Equal 2 $second.GroupOrdinal 'Second companion capture lost attachment order.'
+    Assert-Equal $sourceGroup $identified.PreviousCaptureGroupId 'Predecessor group was not persisted.'
+    $identifiedText = Get-Content -LiteralPath $identified.CapturePath -Raw
+    Assert-True ($identifiedText.Contains("previous_capture_group_id: $sourceGroup")) `
+        'Immutable capture did not preserve the predecessor group.'
+
+    $relationId = 'REL-20260726-180101-c001'
+    $relation = & $relationScript `
+        -VaultPath $vault `
+        -SourceId $identified.CaptureId `
+        -RelationType resolves `
+        -TargetId $sourceGroup `
+        -EvidenceCaptureId $identified.CaptureId `
+        -Detail 'The user explicitly referred to the immediately preceding group.' `
+        -RelationId $relationId
+    $retry = & $relationScript `
+        -VaultPath $vault `
+        -SourceId $identified.CaptureId `
+        -RelationType resolves `
+        -TargetId $sourceGroup `
+        -EvidenceCaptureId $identified.CaptureId `
+        -Detail 'The user explicitly referred to the immediately preceding group.' `
+        -RelationId $relationId
+    Assert-Equal 'related' $relation.State 'Relation helper did not append the relation.'
+    Assert-Equal 'existing-relation' $retry.State 'Relation retry duplicated an existing relation ID.'
+
+    $audit = & $contextAuditScript -VaultPath $vault
+    Assert-True $audit.IsConsistent 'Grouped fixture did not pass the context audit.'
+    Assert-Equal 2 $audit.CaptureGroupCount 'Context audit lost capture-group identity.'
+    Assert-Equal 1 $audit.RelationCount 'Context audit did not count the relation ledger exactly.'
+}
+
+Invoke-Test 'second brain tracker invariants detect stale identified and harvested state' {
+    $vault = New-SecondBrainFixture 'second-brain-tracker-invariants'
+    $capture = & $captureScript `
+        -VaultPath $vault `
+        -InputType text `
+        -Content 'Synthetic current-state evidence.' `
+        -CaptureId 'CAP-20260726-181000-d001'
+    $context = Join-Path $vault 'collections\test-subject\contexts\main'
+    $trackers = Join-Path $context 'trackers'
+    [void](New-Item -ItemType Directory -Path $trackers)
+    $trackerPath = Join-Path $trackers 'current-state.md'
+    $trackerText = @(
+        '---',
+        'tracker_schema: ai-second-brain/v1',
+        'tracker_type: game-state',
+        '---',
+        '',
+        '| ID | Kind | Label | State | Quantity | Parent ID | Map anchor | Opened by | Closed by | Notes |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        ('| `PLANT-001` | planting | Test planting | planted | 1 |  |  | `{0}` |  | Waiting |' -f $capture.CaptureId),
+        ('| `NUT-001` | harvest | Test harvest | collected | 1 | `PLANT-001` |  | `{0}` | `{0}` | Collected |' -f $capture.CaptureId),
+        ('| `RING-001` | item-instance | Test Ring | unidentified | 1 |  |  | `{0}` |  | Appraised later |' -f $capture.CaptureId)
+    ) -join [Environment]::NewLine
+    Set-Content -LiteralPath $trackerPath -Value $trackerText -Encoding UTF8
+    & $relationScript `
+        -VaultPath $vault `
+        -SourceId 'NUT-001' `
+        -RelationType 'harvest-of' `
+        -TargetId 'PLANT-001' `
+        -EvidenceCaptureId $capture.CaptureId `
+        -Detail 'The harvested item came from the planting.' | Out-Null
+    & $relationScript `
+        -VaultPath $vault `
+        -SourceId 'RING-001' `
+        -RelationType 'identified-as' `
+        -TargetId 'RING-TYPE-ALPHA' `
+        -EvidenceCaptureId $capture.CaptureId `
+        -Detail 'The item was identified.' | Out-Null
+
+    $stale = & $contextAuditScript -VaultPath $vault
+    Assert-False $stale.IsConsistent 'Audit accepted stale tracker state after confirmed relations.'
+    Assert-True (@($stale.Errors | Where-Object { $_ -match 'harvest-of.*still has state' }).Count -eq 1) `
+        'Audit did not detect the stale planting state.'
+    Assert-True (@($stale.Errors | Where-Object { $_ -match 'identified-as.*still has state' }).Count -eq 1) `
+        'Audit did not detect the stale unidentified state.'
+
+    $trackerText = $trackerText.Replace('| planted |', '| harvested |').Replace('| unidentified |', '| identified |')
+    Set-Content -LiteralPath $trackerPath -Value $trackerText -Encoding UTF8
+    $fixed = & $contextAuditScript -VaultPath $vault
+    Assert-True $fixed.IsConsistent 'Corrected tracker states did not pass the audit.'
+    Assert-Equal 3 $fixed.TrackerRecordCount 'Audit lost tracker rows.'
+}
+
+Invoke-Test 'second brain completion audit requires terminal disposition and detects false zero claims' {
+    $vault = New-SecondBrainFixture 'second-brain-completion-gate'
+    $capture = & $captureScript -VaultPath $vault -InputType text -Content 'Optional credits note.'
+    $context = Join-Path $vault 'collections\test-subject\contexts\main'
+    $statePath = Join-Path $context '_evidence\state.md'
+    $state = (Get-Content -LiteralPath $statePath -Raw).Replace('Lifecycle: `active`', 'Lifecycle: `completed`')
+    $state += [Environment]::NewLine + 'Latest queue: `no pending captures`'
+    Set-Content -LiteralPath $statePath -Value $state -Encoding UTF8
+
+    $blocked = & $contextAuditScript -VaultPath $vault -CompletionGate
+    Assert-False $blocked.CompletionReady 'Completion gate accepted a pending capture.'
+    Assert-True (@($blocked.Errors | Where-Object { $_ -match 'claims no pending captures' }).Count -eq 1) `
+        'Audit did not detect the false zero-pending claim.'
+
+    $closed = & $processingEventScript `
+        -VaultPath $vault `
+        -CaptureId $capture.CaptureId `
+        -State scope-closed `
+        -Detail 'User explicitly declined processing.'
+    Assert-Equal 'scope-closed' $closed.State 'Processing helper did not accept scope-closed.'
+    $ready = & $contextAuditScript -VaultPath $vault -CompletionGate
+    Assert-True $ready.CompletionReady 'Terminally disposed capture did not satisfy the completion gate.'
+    Assert-Equal 0 $ready.PendingCaptureCount 'Scope-closed capture remained pending.'
+}
+
+Invoke-Test 'second brain reconciliation lock enforces exact ownership' {
+    $vault = New-SecondBrainFixture 'second-brain-reconciliation-lock'
+    $first = & $reconciliationLockScript `
+        -VaultPath $vault `
+        -Action acquire `
+        -OwnerId 'task-one'
+    Assert-Equal 'acquired' $first.State 'First reconciliation owner did not acquire the lock.'
+    $renewed = & $reconciliationLockScript `
+        -VaultPath $vault `
+        -Action acquire `
+        -OwnerId 'task-one'
+    Assert-Equal 'renewed' $renewed.State 'Existing owner could not renew the reconciliation lease.'
+
+    $second = & $reconciliationLockScript `
+        -VaultPath $vault `
+        -Action acquire `
+        -OwnerId 'task-two'
+    Assert-Equal 'locked' $second.State 'Second reconciliation owner incorrectly acquired the lock.'
+    Assert-Equal 'task-one' $second.OwnerId 'Lock view lost the current owner.'
+
+    $wrongOwnerFailed = $false
+    try {
+        & $reconciliationLockScript -VaultPath $vault -Action release -OwnerId 'task-two' *> $null
+    }
+    catch { $wrongOwnerFailed = $true }
+    Assert-True $wrongOwnerFailed 'A different owner released the reconciliation lock.'
+
+    $released = & $reconciliationLockScript `
+        -VaultPath $vault `
+        -Action release `
+        -OwnerId 'task-one'
+    Assert-Equal 'released' $released.State 'Exact owner did not release the reconciliation lock.'
+    $view = & $reconciliationLockScript -VaultPath $vault -Action view
+    Assert-Equal 'unlocked' $view.State 'Released lock remained present.'
+}
+
+Invoke-Test 'second brain audit reports human-surface, rollover, duplicate, and link drift' {
+    $vault = New-SecondBrainFixture 'second-brain-audit-drift'
+    for ($index = 1; $index -le 6; $index++) {
+        $captureId = 'CAP-20260726-19{0:0000}-a{1:000}' -f $index, $index
+        & $captureScript `
+            -VaultPath $vault `
+            -InputType text `
+            -Content "Session entry $index." `
+            -CaptureId $captureId `
+            -SessionId 'oversized-session' | Out-Null
+    }
+    $context = Join-Path $vault 'collections\test-subject\contexts\main'
+    $trackers = Join-Path $context 'trackers'
+    [void](New-Item -ItemType Directory -Path $trackers)
+    $duplicateTracker = @(
+        '---',
+        'tracker_schema: ai-second-brain/v1',
+        'tracker_type: game-state',
+        '---',
+        '',
+        '| ID | Kind | Label | State | Quantity | Parent ID | Map anchor | Opened by | Closed by | Notes |',
+        '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+        '| `TASK-001` | task | First | open | 1 |  |  |  |  | First |',
+        '| `TASK-001` | task | Duplicate | open | 1 |  |  |  |  | Duplicate |'
+    ) -join [Environment]::NewLine
+    Set-Content -LiteralPath (Join-Path $trackers 'tasks.md') -Value $duplicateTracker -Encoding UTF8
+    Add-Content -LiteralPath (Join-Path $context 'README.md') -Value "`r`n[Broken](missing-note.md)"
+    $statePath = Join-Path $context '_evidence\state.md'
+    Add-Content -LiteralPath $statePath -Value (("`r`nLatest checkpoint delta: history" * 200))
+
+    $audit = & $contextAuditScript `
+        -VaultPath $vault `
+        -MaxSessionCaptureGroups 5 `
+        -MaxStateBytes 4096
+    Assert-False $audit.IsConsistent 'Audit accepted duplicate tracker IDs and a broken link.'
+    Assert-True (@($audit.Errors | Where-Object { $_ -match "Tracker ID 'TASK-001' appears more than once" }).Count -eq 1) `
+        'Audit did not detect a duplicate tracker ID.'
+    Assert-Equal 1 $audit.BrokenLinkCount 'Audit did not detect the broken local link exactly.'
+    Assert-True (@($audit.Warnings | Where-Object { $_ -match 'oversized-session.*roll over' }).Count -eq 1) `
+        'Audit did not warn about proactive task rollover.'
+    Assert-True (@($audit.Warnings | Where-Object { $_ -match 'State metadata is.*compact it' }).Count -eq 1) `
+        'Audit did not warn about oversized state metadata.'
+}
+
+Invoke-Test 'second brain skill requires exhaustive state tracking and completion validation' {
+    $skill = Get-Content -LiteralPath $skillPath -Raw
+    $stateTracking = Get-Content -LiteralPath $stateTrackingReferencePath -Raw
+    $scenarios = Get-Content -LiteralPath $validationScenariosPath -Raw
+
+    Assert-True ($skill.Contains('choose one capture-group ID')) `
+        'Skill does not require one durable group for an accepted message.'
+    Assert-True ($skill.Contains('Never label top-ranked search results exhaustive.')) `
+        'Skill does not separate exhaustive enumeration from search ranking.'
+    Assert-True ($skill.Contains('`-CompletionGate`')) `
+        'Skill does not require the completion audit.'
+    Assert-True ($stateTracking.Contains('Identification and source attribution are separate.')) `
+        'State-tracking contract does not preserve aggregate state without false attribution.'
+    Assert-True ($stateTracking.Contains('When a screenshot contains a map')) `
+        'State-tracking contract does not make implicit map position first-class.'
+    foreach ($scenario in 29..36) {
+        Assert-True ($scenarios.Contains(('## V{0:00}' -f $scenario))) `
+            "Validation scenarios are missing V$scenario."
+    }
 }
 
 Invoke-Test 'second brain migration separates the backend and preserves every legacy byte' {

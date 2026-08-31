@@ -205,11 +205,13 @@ $templateFiles = @(
     @{ Source = (Join-Path $assetRoot 'state.md'); Target = (Join-Path $contextRoot '_evidence\state.md') }
 )
 $ledgerPath = Join-Path $contextRoot '_evidence\processing-events.jsonl'
-$allTargetFiles = @($templateFiles | ForEach-Object { $_.Target }) + @($ledgerPath)
+$relationsPath = Join-Path $contextRoot '_evidence\relations.jsonl'
+$requiredTargetFiles = @($templateFiles | ForEach-Object { $_.Target }) + @($ledgerPath)
+$allTargetFiles = @($requiredTargetFiles) + @($relationsPath)
 $existingTargets = @($allTargetFiles | Where-Object { Test-Path -LiteralPath $_ })
 
 if ($existingTargets.Count -gt 0) {
-    $allExist = @($allTargetFiles | Where-Object { -not (Test-Path -LiteralPath $_) }).Count -eq 0
+    $allExist = @($requiredTargetFiles | Where-Object { -not (Test-Path -LiteralPath $_) }).Count -eq 0
     $compatible = $false
     if ($allExist) {
         $rootIndex = Get-Content -LiteralPath (Join-Path $vaultRoot 'second-brain.md') -Raw
@@ -300,6 +302,9 @@ try {
 
     Write-NewUtf8File -LiteralPath $ledgerPath -Content ''
     [void]$createdFiles.Add([IO.Path]::GetFullPath($ledgerPath))
+
+    Write-NewUtf8File -LiteralPath $relationsPath -Content ''
+    [void]$createdFiles.Add([IO.Path]::GetFullPath($relationsPath))
 
 }
 catch {

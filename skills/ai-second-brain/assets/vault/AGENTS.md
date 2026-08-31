@@ -25,6 +25,10 @@ Treat the directory containing this file as the vault root.
 - Keep original captures and completed screenshot or video attachments
   immutable. Store interpretation, machine transcripts, processing changes,
   corrections, and synthesis separately with capture-ID provenance.
+- Give every accepted message one capture-group ID and reuse it across all
+  attachments in order. Record supported cross-message connections in the
+  append-only relation ledger; resolve "the previous message" from the durable
+  predecessor group before semantic similarity.
 - Label AI inference and uncertainty. Do not present inference as user
   evidence.
 - Use outside knowledge only for an explicit scoped request, label it, retain
@@ -55,7 +59,15 @@ Treat the directory containing this file as the vault root.
   attachment, leave it pending, acknowledge it, and return without loading or
   rewriting the guide, journal, questions, or state. Interpret and reconcile
   when the user asks to process, answer, organize, checkpoint, or end the
-  session, or when a correction or urgent contradiction requires it.
+  session. In explicitly selected fast-intake mode, capture an ordinary
+  correction and its known relation without rewriting the notebook; urgent
+  contradictions remain immediate exceptions.
+- For requests asking for all, every, complete, exhaustive, remaining,
+  pending, or a checklist, enumerate current-state trackers and every latest
+  ledger state. Search ranking cannot prove completeness.
+- Before shared-note reconciliation, acquire the cooperative reconciliation
+  lock. Run the read-only context auditor before and after edits, report exact
+  coverage/pending counts, and release the owned lock in a `finally` path.
 
 ## Human-facing organization
 
@@ -63,11 +75,16 @@ Treat the directory containing this file as the vault root.
   notebook people read. When visual/media material exists, treat `library/` as
   its searchable semantic catalog and reusable reference surface. Treat
   `_evidence/` as the audit and processing backend.
+- Create `trackers/` only when recurring current state or exhaustive
+  enumeration justifies it. Use stable unique IDs, explicit state and quantity,
+  parent/map-anchor relations, and capture-backed opening/closing evidence.
 - In an unmigrated legacy context, keep using its existing paths until the
   migration helper is authorized. Never create a partial mix of `inbox` and
   `_evidence`.
 - Keep `README.md` short and navigational. Put a subject in one canonical guide
   note and link to it instead of repeating the same paragraph in several files.
+- Keep `_evidence/state.md` compact and current; checkpoint history belongs in
+  the append-only ledgers or meaningful journal chapters.
 - Use natural filenames and headings. Never require a person to know a capture
   ID to find an item, character, place, puzzle, decision, or event.
 - Put clickable, human-labeled source links at the end of the section they
@@ -86,6 +103,9 @@ Treat the directory containing this file as the vault root.
   same object, glyph, tile, symbol, font, or other recurring visual subject;
   preserve confirmed exemplars and confusable distinctions instead of
   recognizing it from scratch on every capture.
+- Treat a visible map as relevant even when the caption does not mention
+  position. Record an era-aware map anchor from the visible marker geometry and
+  landmarks; same area is not automatically the same cell.
 - When a chat answer relies on an available screenshot or processed video
   frame, render a relevant image inline as well as linking the note or source.
 
@@ -93,3 +113,7 @@ At the start of a fresh task, read `second-brain.md`, announce the active
 collection/context, and stop for clarification when selection is ambiguous.
 Read only the minimum active-context human notes and `_evidence` records needed
 for the current action.
+
+Before marking a context completed, run the auditor with its completion gate.
+Every accepted capture must be reconciled, conflicted, blocked with a truthful
+reason, or `scope-closed`; never claim zero pending when the ledger disagrees.
