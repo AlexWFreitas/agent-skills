@@ -1,92 +1,75 @@
-# Implementation Plan: <Task title>
+# Implementation plan: <Task title>
 
 Status: `draft` · Task: `<task-name>`<br>
-Created: `<ISO-8601 timestamp with UTC offset>` · Last updated:
-`<ISO-8601 timestamp with UTC offset>` · Governing contract:
-`task-definition.md`
+Created: `<ISO-8601 timestamp with UTC offset>` · Updated: `<timestamp>`
 
 ## Current state
 
-<Rewrite this as a concise, coherent operational summary after each material
-lifecycle event.>
-
-- Active phase: `<phase-id or none>`
-- Next action: `<specific next action or none>`
-- Overall progress: `<current outcome-based summary>`
-- Governing contract version: `<approved version or draft>`
-- Blocking condition: `<managed blocker or none>`
-- Latest plan snapshot: `<link or none>`
+- Governing contract: <exact path and immutable version or snapshot>
+- Active phase: <phase or none>
+- Next action: <specific resumable action>
+- Remaining acceptance criteria: <short summary or references>
+- Blocking condition: <actual blocker or none>
+- Latest plan snapshot: <link or none>
 
 ## Authorization
 
 - State: `not-requested | awaiting-approval | approved | exhausted | revoked`
 - Scope: `none | phase:<id> | complete-plan`
 - Mode: `none | single-phase | change-sensitive | persistent`
-- Approval evidence: `<timestamp and unambiguous user authorization or none>`
-- Authorized consequential actions: `<named actions or none>`
-- Mandatory stops: `<task-specific additions plus the skill contract>`
+- Evidence: <timestamp and explicit authorization text, or none>
+- Authorized consequential actions: <named actions, or none>
+- Mandatory stops: <task-specific limits and skill boundaries>
 
 ## Mutation surface
 
-| Target or system | Planned mutation | Reversibility and authority |
+| Target | Intended change | Authority and recovery |
 | --- | --- | --- |
-| <path, repository, service, database, or external party> | <change> | <reversible, contingency, consequential authorization, or unresolved> |
+| <Path or system> | <Local or external effect> | <Authorization and proportionate recovery> |
+
+Name consequential actions individually. No omitted commit, push, deployment,
+database write, destructive operation, purchase, or communication is implied.
+
+## Phases and contract coverage
+
+| Phase | Outcome and state | Contract criteria | Dependencies | Mutations | Verification and evidence |
+| --- | --- | --- | --- | --- | --- |
+| P01 | <Outcome> · `pending` | <Existing IDs, labels, or sections> | <Entry conditions> | <Targets> | <Planned check or actual result> |
+
+Use only phases that create useful dependency, authority, recovery, or
+verification boundaries. Phase states are `pending`, `in-progress`,
+`complete`, `failed`, `blocked`, `skipped`, and `superseded`.
+Explain terminal states other than complete.
+
+Every material requirement and deliverable must reach an acceptance check.
+Keep detailed evidence in linked files when needed; do not duplicate contract
+requirements or create a second coverage ledger.
+
+## Blockers and accepted limitations
+
+| Item | Evidence and impact | Resolver and next step | Contingency or gate | State or acceptance |
+| --- | --- | --- | --- | --- |
+| <Actual blocker or limitation> | <Observation> | <Owner and action> | <Safe next step> | <Open, resolved, or explicit acceptance> |
+
+Delete placeholder rows. Internal tuning choices and remote hypothetical
+failures are not blockers.
 
 ## Supporting documents
 
-The two primary documents are canonical entry points, not a file-count limit.
-Add as many supporting files as coherence requires and keep each material fact
-authoritative in one place.
-
-| Document | Role | Authority and update rule |
+| Document | Authoritative purpose | Update rule |
 | --- | --- | --- |
-| <relative link> | <architecture, research, risk, migration, API, testing, phase detail, or other purpose> | <governing or supporting; when it changes> |
+| <Relative link> | <What the file governs> | <When it changes> |
 
-## Contract coverage
+Use one authoritative home for each fact. Link an existing discovery contract
+directly when sufficient; do not copy it into a competing execution definition.
 
-| Contract item | Planned delivery and phase | Verification evidence | Coverage state |
-| --- | --- | --- | --- |
-| O01 / R01 / D01 / A01 | <deliverable and phase IDs> | <planned or actual evidence> | `planned | in-progress | verified | accepted-limitation | blocked` |
+## Material-event trail
 
-No material outcome, requirement, deliverable, invariant, or acceptance
-criterion may remain orphaned. Update this synthesis when the plan materially
-changes; do not create a second competing traceability ledger.
-
-## Phased plan
-
-| Phase | Outcome and status | Contract coverage | Entry conditions and dependencies | Expected mutations | Verification and completion evidence | Contingency |
-| --- | --- | --- | --- | --- | --- | --- |
-| P01 | <outcome> · `pending` | <O/R/D/A IDs> | <conditions> | <targets and effects> | <checks and evidence> | <proportionate rollback, fallback, standard recovery, or not material> |
-
-Use the fewest phases that create meaningful dependency, authorization,
-mutation, recovery, or verification boundaries. Do not create phases for
-routine implementation steps.
-
-Allowed phase states: `pending`, `in-progress`, `complete`, `failed`,
-`blocked`, `skipped`, or `superseded`. Explain every terminal state other than
-`complete` in the trail and current state.
-
-## Verification summary
-
-| Check | State | Evidence or accepted limitation |
+| Time | Event and evidence | Plan or authority impact |
 | --- | --- | --- |
-| <A-ID and criterion> | `pending` | <link, result, or limitation> |
+| <Timestamp> | <Approval, phase result, material replan, blocker, resume, or closure> | <Effect> |
 
-## Managed blockers and limitations
-
-| Item | Impact | Resolver and resolution step | Safe contingency or gate | State |
-| --- | --- | --- | --- | --- |
-| <blocker or limitation> | <effect> | <owner and action> | <fallback or stop> | `open` |
-
-List only actual execution blockers or material limitations. Do not turn
-ordinary implementation decisions, tuning values, or remote risks into gates.
-
-## Canonical material-event trail
-
-| Time | Event | Evidence or reason | Plan and authorization impact |
-| --- | --- | --- | --- |
-| <timestamp> | Draft created | <source and initial state> | <initial definition and plan state> |
-
-Record approvals, authorization changes, phase transitions, material decisions,
-deviations, replans, blocker transitions, resume reconciliation, and closure
-once. Do not append routine command output or transient observations.
+Update affected current-state sections at material transitions and check the
+whole record for contradictions. Do not rewrite unchanged text or log every
+command. Snapshot at initial approval, material replanning, authority-mode
+changes, and closure.

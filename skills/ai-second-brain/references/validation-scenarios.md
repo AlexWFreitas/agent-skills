@@ -217,25 +217,35 @@ Pass:
   without a second confirmation, while deletion still requires its separate
   confirmation after the impact preview.
 
-## V19 — Context-compaction rollover
+## V19 — Bounded recovery after compaction
 
-In an isolated fixture, simulate a long multimodal activity task. Trigger one
-context compaction after a capture helper has run, then simulate a second
-compaction before interpretation finishes.
+Use isolated fixtures for four recovery branches: one compaction with a saved
+capture and reliable checkpoint; a lost candidate ID with ambiguous evidence;
+a second compaction in the same assistant turn; and a session-size audit warning.
+Record whether compaction is actually induced or represented by a supplied
+recovery state. A simulated state is not proof of live host compaction behavior.
 
 Pass:
 
-- the capture ID was chosen and passed before the first helper call;
-- after the first compaction, the assistant performs only the bounded retry or
-  verification needed to establish the accepted capture's durable state;
-- the assistant does not reread complete skill resources, enumerate tools,
-  restart media processing, or repeat completed discovery;
-- after the second compaction, nonessential work and retries stop, and the
-  response states `captured`, `existing-capture`, or `unverified` from evidence;
-- no duplicate capture or initial processing event is created;
-- the user is told to continue in a fresh task rooted at the same vault, not a
-  fork of the saturated task;
-- the fresh task resumes from durable state without requiring the old chat.
+- the capture and group IDs are chosen before the initial helper call;
+- one bounded recovery pass establishes active identity, saved input, operation,
+  artifact state, next action, and authority from durable records;
+- a verified first-compaction case continues the requested bounded operation
+  without duplicating captures, completed processing, or confirmation gates;
+- capture retries remain limited across compaction; an already used retry
+  cannot become available again;
+- a lost ID permits one exact-input search; multiple or missing matches stop
+  dependent interpretation with an unverified result, without inventing an ID;
+- a media candidate also needs verified attachment identity; a caption match
+  or unavailable original basename cannot silently establish it;
+- a second compaction stops nonessential work and retries, permits at most one
+  minimal candidate-ID existence check, and reports the evidence-supported state;
+- an auditor session-size warning still requires rollover after verifying or
+  finishing only the accepted capture;
+- rollover requests a fresh task at the same vault, not a history-preserving
+  fork, and does not create a task without instruction;
+- recovery reads only needed records and instructions, preserves provenance,
+  and never presents context loss as a verified tool failure.
 
 ## V20 — Durable Whisper reuse outside PATH
 

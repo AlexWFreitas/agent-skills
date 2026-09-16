@@ -1,229 +1,102 @@
 ---
 name: technical-writing
-description: Draft, revise, or review developer-facing technical documentation using the Google developer documentation style guide. Use for procedures, tutorials, concepts, API or CLI references, runbooks, troubleshooting, architecture docs, and release notes; do not use for marketing copy or ordinary code implementation.
+description: Draft, revise, or review developer documentation, including procedures, concepts, API references, runbooks, troubleshooting, and architecture. Use Google developer documentation style within the user's and project's requirements. Excludes marketing and ordinary code implementation.
 ---
 
-# Technical Writing
+# Technical writing
 
-Create technical documentation that is accurate, direct, accessible, and easy
-to use. Apply Google developer documentation style without overriding the
-reader's needs, the requested deliverable, project conventions, or technical
-truth.
+Produce documentation that lets its intended reader complete a task or
+understand a system. Establish technical truth before polishing the prose.
 
-Follow the user's explicit request within the host's permissions. Use this
-skill to finish the requested draft, edit, or review without introducing a new
-approval flow. If a specific skill requirement prevents completion, link this
-`SKILL.md`, quote it, and explain the missing evidence or authority after doing
-the independent work already authorized.
+## Establish the assignment
 
-## Preserve authority and truth
+Infer the reader, purpose, language, format, and requested action from the
+request and supplied material. Distinguish drafting, editing, review, and review
+with revision. Ask only when a missing decision changes meaning, scope,
+audience, or publication outcome. A review-only request does not authorize edits.
 
-Treat technical fidelity as an invariant. Do not change commands, code,
-identifiers, API behavior, configuration keys, values, versions, requirements,
-permissions, links, or stated results merely to improve prose. Verify them from
-the supplied artifacts or authoritative project sources. If the evidence is
-missing or contradictory, preserve the uncertainty and call it out.
+Follow the user's requirements, then project templates and terminology, then
+applicable platform conventions, then this skill's Google-style guidance.
+Preserve commands, code, identifiers, values, requirements, public behavior,
+versions, official names, literal UI labels, and stated results. Missing or
+contradictory evidence stays explicit; plausible wording cannot supply a fact.
 
-Apply style authorities in this order:
+Inspect the relevant context and sources before restructuring an existing
+document. A narrow edit needs only enough context to preserve meaning. Protect
+unrelated work, generated boundaries, and stable link anchors.
 
-1. The user's explicit requirements, language, audience, and deliverable.
-2. The project's house style, templates, glossary, established terminology,
-   and automated documentation rules.
-3. Applicable platform, language, API, product, and publication conventions.
-4. This skill's synthesis of the Google developer documentation style guide.
-5. A project-approved dictionary or other editorial reference.
+## Choose the structure
 
-When authorities conflict, follow the higher authority and report any material
-exception. Do not silently normalize an official product name, public contract,
-literal UI label, or code element to match a lower-level style preference.
+Use the reader's task to choose the document's organization:
 
-## Route supporting guidance
+| Reader need | Useful structure |
+| --- | --- |
+| Complete an operation | Prerequisites, ordered actions, expected result, verification |
+| Learn a workflow | Small useful outcome, concepts beside actions, progressive examples |
+| Resolve a failure | Symptom, diagnostic evidence, likely cause, remedy, verification |
+| Look up an interface | Exact contract, inputs, outputs, errors, permissions, examples |
+| Understand a system | Responsibilities, boundaries, one representative end-to-end path |
+| Operate a service | Entry conditions, actions, checks, escalation or recovery |
 
-Load only the references needed for the request:
+Preserve an established structure when it serves the reader. Do not add empty
+sections to resemble a template. Read
+[document-patterns.md](references/document-patterns.md) for the relevant
+pattern when planning or repairing a substantial document.
 
-- Read [core-style.md](references/core-style.md) for a substantial draft,
-  rewrite, or prose review.
-- Read [technical-elements.md](references/technical-elements.md) when the
-  material includes code, commands, placeholders, API reference text, UI
-  instructions, links, HTML, Markdown, filenames, or example data.
-- Read [document-patterns.md](references/document-patterns.md) when choosing or
-  repairing the structure of a procedure, concept, reference, troubleshooting
-  guide, runbook, architecture document, migration guide, or release note.
-- Read [review-checklist.md](references/review-checklist.md) for a requested
-  review and before finalizing a substantial deliverable.
-- Use [source-map.md](references/source-map.md) to locate the exact Google page
-  for an uncommon rule or a live verification. The map is a reviewed routing
-  index, not a frozen replacement for the actively maintained guide.
+## Draft or revise
 
-## Establish the writing task
+1. Establish authoritative facts and the scope of verification. Put prerequisites
+   and conditions before the actions that depend on them.
+2. Draft from that evidence around the reader's purpose. Label illustrative
+   examples and unresolved placeholders; never invent behavior.
+3. Use clear, precise prose: active voice, present tense, consistent terminology,
+   and direct instructions. Default to US English only when the user or project
+   has not selected another language or locale.
+4. Verify changed technical claims against their sources. Keep examples runnable
+   or internally coherent within the stated verification boundary. Executing a
+   documented command is a separate action, not an automatic part of editing.
+5. Review missing context, incorrect meaning, ambiguous instructions, and
+   accessibility before polishing editorial mechanics.
 
-Infer what is clear from the request and supplied material. Ask only when a
-missing decision would materially change the audience, technical meaning,
-scope, format, or publication outcome.
+Use the smallest workflow that satisfies the request. Side questions and later
+corrections steer the assignment without discarding completed work. Choose
+ordinary editorial details yourself within the settled meaning.
 
-Identify the following as needed:
+## Load relevant guidance
 
-- The reader, their likely knowledge, and the task or question that brought
-  them to the document.
-- The document's primary purpose and the action or understanding it must
-  enable.
-- The authoritative facts, source artifacts, supported versions, permissions,
-  prerequisites, and verification boundaries.
-- The requested output format, locale, terminology, and project conventions.
-- Whether the user wants a draft, an in-place edit, a review, or a review plus
-  revision.
+- [core-style.md](references/core-style.md): substantial prose drafting,
+  rewriting, or review; language, modality, headings, and mechanics.
+- [technical-elements.md](references/technical-elements.md): commands, code,
+  placeholders, interfaces, UI steps, links, markup, filenames, and examples.
+- [review-checklist.md](references/review-checklist.md): requested reviews and
+  final checks for substantial deliverables. Apply relevant items only.
+- [source-map.md](references/source-map.md): locate the authoritative Google
+  page for an uncommon or changing rule. This is a reviewed routing index.
 
-For an existing document, inspect its surrounding documentation and source
-material before imposing a new structure. Preserve useful established patterns
-unless they conflict with a higher authority or prevent the document from
-working for its readers.
+Use semantic headings, lists, and tables; descriptive links; useful alt text;
+and textual explanations of essential visual information. Color, position,
+images, and sound must not be the only way to understand an instruction.
+Keep real personal information out of examples and screenshots.
 
-For a narrow edit, inspect only the surrounding text and sources needed to
-preserve meaning. Use known audience and project defaults for reversible
-editorial choices. A later correction changes the relevant portion of the
-active assignment; a side question does not discard the deliverable in progress.
+When another workflow governs discovery, execution, or cooperation, use its
+existing task and authorization records. This skill governs document quality
+and adds no startup, approval, or closure process. A conversational style
+applies where compatible with the document's requirements.
 
-## Draft and revise
+## Verify and deliver
 
-Use the smallest workflow that fits the task:
+Run required documentation checks and verify affected claims. Prose-only work
+does not require product tests. Repeat checks for new edits, failures, or a
+concrete unresolved concern. Do not claim runnable examples, accessibility,
+working links, or full compliance beyond the checks actually performed.
 
-1. Build a reader-oriented outline around the primary purpose. Put required
-   context before the point where the reader needs it.
-2. Draft or revise for technical fidelity first. Never fill factual gaps with
-   plausible-sounding details.
-3. Apply the writing contract below and the relevant document pattern.
-4. Check every technical element against the source. Keep an example runnable
-   or internally coherent; label illustrative or unverified material.
-5. Run the relevant review checklist and repair material issues before
-   polishing minor mechanics.
+For reviews, report material findings in consequence order with locations and
+actionable corrections; say when none were found. For drafts and edits, deliver
+the text or artifact with a proportionate account of changes, sources, and
+verification limits. A small edit normally needs only its revised text or link.
 
-For a small wording edit, apply the same principles without forcing a full
-document redesign.
-
-Match verification to the change. Run required project documentation checks
-and verify changed technical claims against their sources. A prose-only edit
-does not require product tests or executing documented commands. Repeat checks
-only when further edits, failures, or a concrete unresolved concern justify it.
-
-## Default writing contract
-
-Unless a higher authority says otherwise:
-
-- Write in clear US English. Use simple, precise, globally understandable
-  words and standard sentence order.
-- Address the reader as **you**. Use the imperative for instructions. Use
-  **user** only for a person who uses software that the reader is developing.
-- Prefer active voice and present tense. Use passive voice only when the actor
-  is irrelevant, intentionally de-emphasized, or unknown and the result stays
-  clear.
-- Put the condition, context, location, or goal before the instruction. Keep
-  the actor and action explicit.
-- Use a conversational, friendly, respectful tone without slang, cuteness,
-  hype, humor, idioms, metaphors, or culture-specific references.
-- Use one consistent term for one concept. Define unfamiliar terms and
-  abbreviations where the target audience needs them. Resolve ambiguous
-  pronouns by naming the entity.
-- Do not anthropomorphize hardware or software. Describe what a component
-  detects, returns, stores, rejects, or performs.
-- Prefer factual, verifiable claims. Avoid unsupported superlatives,
-  guarantees, comparisons, and absolute security or performance promises.
-- Describe the current supported behavior. Avoid **currently**, **new**,
-  **latest**, **soon**, and speculative future features unless the deliverable
-  is explicitly time-bound and the information is authorized.
-- Distinguish requirements, recommendations, options, and possibilities. Use
-  **must** or an imperative for a requirement, **We recommend** for a genuine
-  recommendation, **can** for permission or an option, and **might** for a
-  possible outcome. Avoid ambiguous **should**.
-- Use common contractions where they improve a natural tone, especially
-  negative forms such as **don't** and **can't**. Avoid invented or complex
-  contractions.
-- Use complete articles and helper words when they remove ambiguity. Do not
-  drop **a**, **an**, **the**, **that**, or **then** merely for brevity.
-- Keep paragraphs focused on one idea, put the most important point first, and
-  split walls of text. Prefer short sentences; treat 26 words as a review
-  signal, not a mechanical limit.
-- Build explanations with connected paragraphs. Use lists and tables when they
-  make actual steps, parallel items, or comparisons easier to follow. Remove
-  stock transitions, repeated conclusions, and invented labels; retain precise
-  domain terminology the intended reader needs.
-
-## Organize for scanning and action
-
-- Use a unique, descriptive, sentence-case page title. Use base-form verbs for
-  task headings and noun phrases for conceptual headings.
-- Keep a logical heading hierarchy, do not skip levels, and do not use heading
-  levels merely for visual styling. Preserve stable anchors when renaming
-  linked headings.
-- Use numbered lists when sequence matters, bulleted lists for nonsequential
-  items, and description lists for term-description pairs. Keep list items
-  parallel and make it clear whether unordered items are required or optional.
-- Introduce a list, table, code sample, output block, or image when the heading
-  alone does not provide enough context. Use a complete introductory sentence.
-- Use tables only for genuinely two-dimensional data. Avoid merged cells,
-  layout tables, one-column tables, and tables embedded in procedures.
-- Use notices sparingly. Put prerequisites, required actions, results, and
-  essential success information in the main flow instead of hiding them in a
-  note.
-- Use footnotes only when a cross-reference, note, parenthetical, or in-flow
-  explanation cannot work.
-
-## Make the document accessible
-
-- Make the meaning survive without color, position, punctuation, images,
-  animation, or sound as the only cue.
-- Use semantic headings, lists, tables, code, emphasis, and native controls.
-- Write descriptive link text that makes sense out of context. Explain
-  downloads, mail links, same-page jumps, and other unexpected behavior.
-- Provide useful alt text for informative images and empty alt text for purely
-  decorative images. Explain complex diagrams in surrounding text.
-- Do not use images of text, code, commands, or terminal output when real text
-  works. Never expose real personally identifiable information in screenshots
-  or examples.
-- Avoid directional instructions such as **above**, **below**, **left**, and
-  **right**. Name the section, control, field, or preceding/following item.
-- For interactive content, ensure the intended flow is usable with a keyboard
-  and understandable with a screen reader. Report when this was not tested.
-
-## Handle writing modes
-
-### Draft or rewrite
-
-Deliver a coherent document, not a collection of isolated improvements. Keep
-facts and scope traceable to the source material. If important information is
-missing, use an explicit placeholder or an unresolved note instead of inventing
-content.
-
-### Edit files
-
-Preserve unrelated work, local formatting conventions, anchors, and generated
-boundaries. Change only the documentation in scope. Running examples,
-publishing, committing, and altering external systems require authorization
-covering those actions. Reuse explicit authorization already given instead of
-requiring a separate confirmation turn.
-
-### Review
-
-When the user asks only for review, do not edit the artifact. Prioritize
-incorrect, unsafe, incomplete, ambiguous, or inaccessible content over minor
-punctuation preferences. Give each finding enough location and replacement
-guidance to act on it. If no material issue exists, say so and state what was
-not verified.
-
-## Finish transparently
-
-For substantial work, give a concise handoff covering the applicable items:
-
-- What was drafted, changed, or reviewed.
-- Which technical sources, project conventions, and style references governed
-  the result.
-- Which commands, examples, links, UI paths, or accessibility behaviors were
-  actually verified.
-- Any conflicts, deliberate style exceptions, assumptions, or unresolved
-  technical gaps.
-
-Do not claim that a document is correct, accessible, runnable, or fully style
-compliant beyond the checks actually performed.
-
-For a small edit, return the revised text or a short description and file link.
-Do not reproduce the review checklist or list every style reference unless the
-user requests that detail.
+Reuse existing authorization. Publishing, committing, or changing external
+systems needs authority covering those actions. If a skill requirement prevents
+completion, finish independent authorized work, link this file, quote the
+requirement, and explain the missing evidence or authority. An editorial
+preference does not create an approval gate.

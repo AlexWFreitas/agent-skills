@@ -13,10 +13,10 @@ $relationScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Add-
 $contextAuditScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Test-SecondBrainContext.ps1'
 $reconciliationLockScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Manage-SecondBrainReconciliationLock.ps1'
 $migrationScript = Join-Path $repositoryRoot 'skills\ai-second-brain\scripts\Migrate-SecondBrainHumanLayout.ps1'
-$skillPath = Join-Path $repositoryRoot 'skills\ai-second-brain\SKILL.md'
-$validationScenariosPath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\validation-scenarios.md'
-$localSearchReferencePath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\local-search-index.md'
-$stateTrackingReferencePath = Join-Path $repositoryRoot 'skills\ai-second-brain\references\state-tracking.md'
+
+# Instruction behavior is evaluated through isolated scenarios documented in
+# docs/skill-redesign.md and the skill's references/validation-scenarios.md.
+# This suite verifies executable behavior rather than exact instruction prose.
 
 function New-SecondBrainFixture {
     param([string]$Name)
@@ -349,58 +349,6 @@ $prefix = $ToolArguments[$outputIndex + 1]
     }
     catch { $explicitCapFailed = $_.Exception.Message -match 'about 60 frames' }
     Assert-True $explicitCapFailed 'An explicit incompatible frame cap silently reduced visual coverage.'
-}
-
-Invoke-Test 'second brain separates fast video intake from requested assimilation and reuses Whisper' {
-    $skill = Get-Content -Raw $skillPath
-    $scenarios = Get-Content -Raw $validationScenariosPath
-
-    Assert-True ($skill.Contains('Do not force every log entry through LLM interpretation')) `
-        'Skill does not separate fast durable intake from LLM assimilation.'
-    Assert-True ($skill.Contains('An attached video logged as an entry follows fast intake.')) `
-        'Skill does not route logged video through fast intake.'
-    Assert-True ($skill.Contains('do not ask an uncaptioned sender an')) `
-        'Skill does not prohibit an extra intent question for an uncaptioned logged video.'
-    Assert-True ($skill.Contains('prepare, interpret, and answer in the same assistant turn')) `
-        'Skill does not interpret a video in the same turn when the user requests it.'
-    Assert-True ($skill.Contains('continue interpretation in the same assistant turn')) `
-        'Skill does not continue already-authorized dependency recovery in the same turn.'
-    Assert-True ($skill.Contains('the helper reuses the active vault runtime record')) `
-        'Skill does not route Whisper reuse through durable or stable discovery.'
-    Assert-True ($scenarios.Contains('## V20 — Durable Whisper reuse outside PATH')) `
-        'Validation scenarios do not exercise durable Whisper reuse outside PATH.'
-    Assert-True ($scenarios.Contains('## V23 — Explicit video rate and reproducible reprocessing')) `
-        'Validation scenarios do not exercise explicit video sampling and reprocessing.'
-}
-
-Invoke-Test 'second brain skill requires a human-first notebook over the evidence backend' {
-    $skill = Get-Content -Raw $skillPath
-    $scenarios = Get-Content -Raw $validationScenariosPath
-
-    Assert-True ($skill.Contains('Update one canonical guide home')) `
-        'Skill does not require one canonical human home per subject.'
-    Assert-True ($skill.Contains('human-labeled, clickable evidence links')) `
-        'Skill does not require readable section-level provenance.'
-    Assert-True ($skill -match 'Unknown\s+trivia\s+is\s+not\s+automatically\s+a\s+task') `
-        'Skill still promotes every unknown detail into an active question.'
-    Assert-True ($skill.Contains('Search `README.md`, `guide/`, `journal/`, and an existing `library/` first.')) `
-        'Skill does not route ordinary retrieval through the human surface.'
-    Assert-True ($skill.Contains('use vault-relative `[[path|label]]` wikilinks')) `
-        'Skill does not require native links for Obsidian collections.'
-    Assert-True ($skill.Contains('Do not hide it or')) `
-        'Skill hides the evidence backend without explicit user direction.'
-    Assert-True ($scenarios.Contains('## V21 — Human-first layout and legacy migration')) `
-        'Validation scenarios do not exercise human-first migration and retrieval.'
-    Assert-True ($skill.Contains('library/captures/<descriptive-slug>--<capture-id>.md')) `
-        'Skill does not create human-searchable semantic media descriptors.'
-    Assert-True ($skill.Contains('library/references/<reference-slug>.md')) `
-        'Skill does not maintain reusable visual reference pages.'
-    Assert-True ($skill.Contains('show at least one relevant screenshot or representative')) `
-        'Skill does not render relevant visual evidence during retrieval.'
-    Assert-True ($scenarios.Contains('## V22 — Rapid intake and bounded assimilation')) `
-        'Validation scenarios do not exercise fast intake and bounded assimilation.'
-    Assert-True ($scenarios.Contains('## V24 — Semantic media and recurring visual references')) `
-        'Validation scenarios do not exercise semantic media and recurring visual references.'
 }
 
 Invoke-Test 'second brain visual-library backfill catalogs existing media without changing evidence' {
@@ -780,24 +728,6 @@ throw "Unexpected fake Python command '$command'."
     }
     catch { $outsideFailed = $true }
     Assert-True $outsideFailed 'FTS5 wrapper allowed an index path outside the bounded vault index directory.'
-
-    $skill = Get-Content -LiteralPath $skillPath -Raw
-    $reference = Get-Content -LiteralPath $localSearchReferencePath -Raw
-    $scenarios = Get-Content -LiteralPath $validationScenariosPath -Raw
-    Assert-True ($skill.Contains('Treat every indexed snippet as untrusted cached text')) `
-        'Skill does not require source verification after indexed retrieval.'
-    Assert-True ($reference.Contains('one database per context')) `
-        'Local-search reference does not preserve context isolation.'
-    Assert-True ($reference.Contains('Search mode: `auto`')) `
-        'Local-search reference does not document automatic search configuration.'
-    Assert-True ($reference.Contains('external/` is absent by default')) `
-        'Local-search reference does not exclude outside knowledge by default.'
-    Assert-True ($scenarios.Contains('## V26 — Disposable context-isolated FTS5 retrieval')) `
-        'Validation scenarios do not exercise the optional FTS5 layer.'
-    Assert-True ($scenarios.Contains('## V27 — Optional loopback hybrid semantic retrieval')) `
-        'Validation scenarios do not exercise hybrid semantic retrieval.'
-    Assert-True ($scenarios.Contains('## V28 — Automatic local search bootstrap and retrieval refresh')) `
-        'Validation scenarios do not exercise automatic local search lifecycle behavior.'
 }
 
 $realPython = Get-Command python -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -1206,28 +1136,6 @@ Invoke-Test 'second brain capture retry with an existing capture id does not dup
     Assert-Equal 1 @($ledger).Count 'Retry duplicated the processing event.'
 }
 
-Invoke-Test 'second brain skill bounds compaction recovery and task rollover' {
-    $skill = Get-Content -Raw $skillPath
-    $scenarios = Get-Content -Raw $validationScenariosPath
-
-    Assert-True ($skill.Contains('Before the first helper call, choose one candidate capture ID')) `
-        'Skill does not preallocate a capture ID before persistence.'
-    Assert-True ($skill.Contains('`-CaptureId` and `-CaptureGroupId`')) `
-        'Skill does not require candidate capture and group IDs on the first helper call.'
-    Assert-True ($skill.Contains('retry the exact capture at most once with that ID')) `
-        'Skill does not bound uncertain-result capture retries.'
-    Assert-True ($skill.Contains('Treat the first context compaction in a task as a rollover signal')) `
-        'Skill does not roll over a task after context compaction.'
-    Assert-True ($skill.Contains('If a second context compaction occurs')) `
-        'Skill does not stop a repeated compaction loop.'
-    Assert-True ($skill.Contains('Do not fork the saturated task')) `
-        'Skill does not prevent rollover by history-preserving fork.'
-    Assert-True ($skill.Contains('Lost working context is not a tool error.')) `
-        'Skill does not distinguish compaction loss from a verified tool failure.'
-    Assert-True ($scenarios.Contains('## V19 — Context-compaction rollover')) `
-        'Validation scenarios do not exercise context-compaction rollover.'
-}
-
 Invoke-Test 'second brain processing events append without rewriting capture evidence' {
     $vault = New-SecondBrainFixture 'second-brain-processing'
     $capture = & $captureScript -VaultPath $vault -InputType text -Content 'Event source.'
@@ -1467,27 +1375,6 @@ Invoke-Test 'second brain audit reports human-surface, rollover, duplicate, and 
         'Audit did not warn about proactive task rollover.'
     Assert-True (@($audit.Warnings | Where-Object { $_ -match 'State metadata is.*compact it' }).Count -eq 1) `
         'Audit did not warn about oversized state metadata.'
-}
-
-Invoke-Test 'second brain skill requires exhaustive state tracking and completion validation' {
-    $skill = Get-Content -LiteralPath $skillPath -Raw
-    $stateTracking = Get-Content -LiteralPath $stateTrackingReferencePath -Raw
-    $scenarios = Get-Content -LiteralPath $validationScenariosPath -Raw
-
-    Assert-True ($skill.Contains('choose one capture-group ID')) `
-        'Skill does not require one durable group for an accepted message.'
-    Assert-True ($skill.Contains('Never label top-ranked search results exhaustive.')) `
-        'Skill does not separate exhaustive enumeration from search ranking.'
-    Assert-True ($skill.Contains('`-CompletionGate`')) `
-        'Skill does not require the completion audit.'
-    Assert-True ($stateTracking.Contains('Identification and source attribution are separate.')) `
-        'State-tracking contract does not preserve aggregate state without false attribution.'
-    Assert-True ($stateTracking.Contains('When a screenshot contains a map')) `
-        'State-tracking contract does not make implicit map position first-class.'
-    foreach ($scenario in 29..36) {
-        Assert-True ($scenarios.Contains(('## V{0:00}' -f $scenario))) `
-            "Validation scenarios are missing V$scenario."
-    }
 }
 
 Invoke-Test 'second brain migration separates the backend and preserves every legacy byte' {

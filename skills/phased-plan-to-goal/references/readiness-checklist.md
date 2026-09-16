@@ -1,130 +1,62 @@
-# Readiness and Closure Checklist
+# Execution readiness and closure
 
-Use this semantic review at the combined approval gate, material replanning,
-resume, and closure. Judge coherence and authority; do not mechanically lint
-quality by file count, line count, or heading count.
+Review relevant items at approval, material changes, resume, and closure.
+Evaluate meaning and evidence; document size and heading counts cannot prove
+quality. Recheck affected items rather than restarting every successful check.
 
-## Before requesting approval
+## Contract and planning
 
-- Source provenance, precedence, freshness, conflicts, omissions, and access
-  limits are recorded where material.
-- No governing requirement, clarification, decision, or boundary exists only in
-  chat or an unindexed source.
-- The normalized task definition is self-contained without assuming a discovery
-  record. It distinguishes verified current state from inference and assumption.
-- Desired outcomes have observable success measures; requirements and
-  invariants are testable and include the functional, non-functional,
-  compatibility, security, operational, and data obligations that materially
-  constrain this task. Unneeded categories were not populated mechanically.
-- Affected systems and users, scope, exclusions, deliverables, constraints,
-  dependencies, and assumptions have the detail needed to constrain execution.
-- Material decisions preserve rationale and prohibit silent substitution of an
-  approach that changes the required outcome or crosses an authority or scope
-  boundary.
-- Every material lifecycle, propagation, availability, compatibility, or
-  manual-operation boundary is translated into observable behavior, including
-  delayed effects on already-running or in-flight consumers and any required
-  restart, reconnect, redeploy, or other manual action when applicable.
-- Plausible significant risks have triggers, impacts, proportionate mitigations
-  or contingencies, and a resolver. Remote compound failures and speculative
-  future-scale concerns were not promoted into current scope.
-- Every user-owned or execution-blocking unknown has impact, resolver,
-  resolution step, and a safe contingency or gate. Implementer-owned choices
-  use bounded latitude or evidence-backed reversible defaults.
-- Every outcome and requirement traces to a deliverable and acceptance check;
-  every deliverable and check traces back to governing authority.
-- The definition of done requires implemented deliverables and behavior plus
-  passing evidence; it does not describe contract or plan readiness as task
-  completion.
-- Required interface and data values trace to verified sources or to an explicit
-  implementation inspection dependency and safe stop gate. Acceptance checks
-  cover representative semantics, not only structural shape.
-- The implementation plan covers every deliverable and definition-of-done
-  check with outcome-led, bounded, dependency-aware, verifiable phases, and its
-  coverage synthesis agrees with the task definition.
-- The plan uses the fewest phases that create meaningful dependency,
-  authorization, mutation, recovery, or verification boundaries; routine steps
-  did not become separate phases.
-- The mutation surface is complete. Every consequential action is named rather
-  than implied.
-- Supporting files improve coherence, are indexed from a canonical entry point,
-  state their authoritative purpose and implementation consequence, and do not
-  duplicate or fragment authoritative facts.
-- Optional sections were omitted only after a materiality review, not because
-  the compact source material failed to mention them.
-- Every planning question was user-owned because it affected the outcome,
-  scope, authority, significant cost, irreversible policy, or verification and
-  could not be resolved or safely delegated.
-- Every foundational recommendation made governing traces to direct governing
-  evidence or an explicit owner decision. Technical feasibility, reuse, lower
-  cost, or a conservative default was not treated as authority; an
-  implementer-owned default remains adaptable in the plan.
-- Each clarification answer governs only the decision actually asked. No
-  option bundled a separate unconfirmed foundational choice and treated one
-  selection as authority for both.
-- Every user-visible authorization rule and public input/output semantic traces
-  to governing evidence or an explicit owner decision; conservative defaults
-  and adjacent requirements were not treated as silent authority.
-- Internal correctness mechanisms were not promoted into public ordering,
-  encoding, filename, versioning, or compatibility promises without evidence.
-- No decision was asked twice in substance. A reopened decision identifies the
-  new evidence that made the recorded answer insufficient.
-- Safety mechanisms, rollback provisions, phases, and supporting documents are
-  proportionate to current evidence rather than recursively expanded around
-  every conceivable failure.
-- Remaining unknowns are implementer-owned, non-material, or have an impact,
-  resolver, resolution step, and safe contingency or gate.
-- Existing explicit authorization was checked before requesting approval again.
-  If approval is missing, the question distinguishes one named phase,
-  complete-plan change-sensitive, and complete-plan persistent authorization.
-  It uses a channel permitted by the host, identifies an evidence-backed
-  recommendation, names the exact scope, and requires an explicit answer. Its
-  preceding summary makes material operational boundaries and manual actions
-  salient. An optional unanswered question never grants approval.
+- The plan names the exact governing contract version. A sufficient incoming
+  definition is reused; normalization preserves originals and adds only needed
+  material.
+- A fresh implementer can identify the outcome, verified context, scope,
+  governing choices, constraints, dependencies, deliverables, and completion
+  evidence without chat history.
+- Material sources and supporting files have clear authority, precedence, and
+  implementation consequences. Facts, assumptions, recommendations, and
+  approvals are distinguishable.
+- Public authorization and input/output semantics follow governing evidence or
+  explicit decisions. Conservative or convenient implementation defaults have
+  not silently become product policy.
+- Settled operational limitations explain observable effects and required
+  manual actions, including existing consumers when relevant.
+- Remaining material unknowns name impact, resolver, resolution step, and a safe
+  contingency or gate. Unverified data values require inspection before use.
+- Each deliverable and requirement reaches a planned phase and acceptance check.
+  Checks cover semantic behavior and representative values, not just shape.
+- Phases create meaningful boundaries; recovery measures fit plausible risks.
+  Routine mechanics remain adaptable.
+- The mutation surface is complete and consequential actions are named.
+- Existing authorization was checked. Missing approval is requested only after
+  the contract and plan are reviewable, through a permitted channel, with
+  the exact phase or plan and authorization mode made clear.
 
-## Before starting or changing a phase
+## Execution and recovery
 
-- Recorded authorization covers the phase, current mode, mutations, and named
-  consequential actions.
-- Entry conditions and dependencies are satisfied or explicitly managed.
-- Actual state still agrees with the plan; unrelated user changes are
-  protected.
-- A material change in change-sensitive mode has renewed approval.
-- Persistent-mode work remains inside the approved task contract and immutable
-  stop boundaries.
+- Authority covers the next phase, its mode, and its mutations.
+- Actual state has been inspected and unrelated changes are protected.
+- Entry conditions and dependencies hold or have explicit management.
+- Change-sensitive mode pauses for material changes; persistent mode remains
+  inside the approved contract and its stop boundaries.
+- User steering has been incorporated without losing the active objective.
+- Recoverable failures were diagnosed within authority; actual blockers name
+  evidence, impact, resolver, and safe next action.
+- Current state, coverage, and the material-event trail agree. Decisions are
+  not asked twice without new evidence that changes them.
+- On resume, the contract version, plan, relevant sources, and actual state were
+  reconciled. Valid authorization was reused.
 
-## After a phase or failed check
+## Completion
 
-- Required checks have evidence; an attempted change is not labeled complete.
-- Checks cover the approved contract and changed behavior. Repeated or broader
-  testing has a concrete reason, not merely a new phase or an available tool.
-- Recoverable failures were diagnosed within authority.
-- A failed or blocked phase records evidence, impact, resolver, next action,
-  and safe contingency.
-- Any accepted limitation has explicit user evidence.
-- Current-state sections were rewritten coherently and the material event was
-  recorded once.
-
-## On resume
-
-- Applicable instructions, the task contract, plan, newest snapshots,
-  supporting-file index, and material sources were reread.
-- Actual state was inspected read-only before mutation and reconciled with the
-  record.
-- Goal, authorization, mutation surface, mode, and next action remain valid.
-- Material drift caused clarification or renewed approval rather than silent
-  continuation.
-
-## Before closure
-
-- Every phase has a justified terminal state.
-- All required checks pass or each remaining limitation is explicitly accepted.
-- Actual workspace and external state are reconciled and every mutation or
-  consequential action is accounted for.
-- The task definition remains the approved contract or has a properly approved,
-  versioned amendment.
-- The plan and supporting documents form a coherent, non-duplicative whole that
-  a fresh agent can resume without chat context.
-- Complete final snapshots exist and the handoff identifies results, evidence,
-  accepted limitations, material operational behavior or manual action, and
-  follow-up work.
+- Deliverables exist and every acceptance criterion has evidence or an explicit
+  accepted limitation. Document readiness has not substituted for implementation.
+- Every phase has a justified terminal state and all mutations are accounted for.
+- Tests and checks match the contract and changed behavior; repetition has a
+  concrete reason.
+- Contract amendments have explicit authority and preserve prior versions.
+- The plan is coherent for a fresh reader, with final snapshots and the exact
+  governing contract version retained.
+- New snapshot links resolve from their own directories. Existing immutable
+  snapshots are preserved, with their original link base recorded when needed.
+- The handoff states results, evidence, accepted limits, material operational
+  consequences or manual actions, and remaining follow-up work.

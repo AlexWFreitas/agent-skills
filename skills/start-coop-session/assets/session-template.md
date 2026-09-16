@@ -7,6 +7,8 @@ Last updated: `<ISO-8601 timestamp with UTC offset>`
 
 ## Confirmed contract
 
+- Governing task definition: <exact path and version, or `None`>
+- Participation: <what the user decides and what the agent may do autonomously>
 - Goal: <shared outcome>
 - Source authority: <governing sources and whether external research is allowed>
 - In-scope sources: <paths, links, or other identifiers>
@@ -15,6 +17,10 @@ Last updated: `<ISO-8601 timestamp with UTC offset>`
 - Working artifacts: <paths or `None`>
 - Completion criteria: <observable checks>
 - Initial route: <concise sequence>
+
+When a task definition governs, link its outcomes and completion criteria
+instead of copying them. Record session-specific sources, participation, and
+working artifacts here. This record does not create execution authority.
 
 ## Current state
 

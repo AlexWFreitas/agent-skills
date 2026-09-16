@@ -101,6 +101,26 @@ approval requirement from a recommendation or repeat an approval already given.
 The [Astra skill review](docs/astra-skill-review.md) records the official
 guidance, catalog changes, and validation limits for the September 2026 update.
 
+### Workflow design and composition
+
+The [catalog redesign](docs/skill-redesign.md) describes the current skill
+boundaries and its validation evidence. Keep each installed skill self-contained:
+essential behavior belongs in its entry point, and substantial operation-specific
+detail belongs in explicitly routed references. Repository authoring guidance
+must not become a runtime dependency on this checkout.
+
+Discovery owns the implementation brief; phased execution references its exact
+governing version and owns the operational plan. Cooperation owns user
+participation and session progress. Technical writing governs document quality,
+and Clear Conversation governs compatible prose choices. Compose those roles
+without duplicate contracts, approval loops, or competing status records.
+
+Descriptions distinguish asking to use a workflow from discussing or reviewing
+the skill itself. Preserve existing activation policies. Validate packaging and
+helper behavior with the commands below; evaluate instruction behavior through
+observable actions and artifacts in disposable workspaces, not exact prose
+matches. A shorter entry point is not evidence of better model performance.
+
 ## Validate changes
 
 Run the same commands used by CI:

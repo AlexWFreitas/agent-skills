@@ -1,133 +1,51 @@
 ---
 name: ai-second-brain
-description: Rapidly capture, later assimilate, organize, and retrieve user-provided text, screenshots, video, and dictated knowledge in a human-readable local Markdown vault with semantic media names, reusable visual references, provenance, context isolation, and firsthand-only behavior. Use only when the user explicitly invokes `$ai-second-brain` or works inside a vault whose AGENTS.md requires it.
+description: Capture, organize, and retrieve firsthand text and media in a local Markdown vault. Use when explicitly asked to use ai-second-brain or when the active vault's AGENTS.md requires it. Discussing the skill outside a vault does not activate capture.
 ---
 
-# AI Second Brain
+# AI second brain
 
-Operate a user-owned Markdown vault as the authoritative record. Capture
-deliberate inputs before interpreting them, use only the active context, and
-default to acting as though no outside subject knowledge is available. Keep the
-human notebook readable without sacrificing the separate evidence trail.
+Keep a readable local notebook with a separate evidence trail. Save deliberate
+inputs before interpreting them, operate only in the active context, and answer
+from that context's evidence. Markdown and retained media are authoritative;
+chat history and generated search indexes are not.
 
-The user's explicit instructions govern within the host's permissions. Reuse
-context choices and local-runtime authorization that still apply. If a skill
-rule requires stopping, link this `SKILL.md`, quote the rule, and report the
-unmet condition and durably completed work.
+## Preserve the evidence boundary
 
-## Required resources
+- Default to firsthand-only behavior. Do not reveal, confirm, deny, hint at, or
+  steer around facts absent from the active context, even when known to the
+  model. Do not browse for subject facts without an explicit scoped override.
+- Never read or merge sibling contexts without an explicit cross-context request.
+  If context identity is missing or ambiguous, resolve it before a write or
+  subject read. Offer known names without reading sibling contents.
+- Original captures and completed attachments are immutable. Store observations,
+  machine transcripts, inferences, corrections, and processing changes separately
+  with capture-ID provenance. Similarity never establishes identity or truth.
+- Never auto-delete evidence. Archive preserves it; permanent deletion needs
+  the impact preview and later confirmation in the lifecycle procedure.
+- Reuse valid context choices and runtime authorization. Do not add hosted
+  services, plugins, connectors, paid model APIs, or authoritative databases.
+  Optional FTS5 and installed loopback embeddings remain disposable local caches.
 
-Read [references/vault-contract.md](references/vault-contract.md) before
-initializing, manually reproducing helper behavior, reconciling, retrieving,
-correcting, archiving, deleting, or changing layout. A normal fast intake that
-uses the capture helper does not load the full contract; the helper enforces the
-mechanical write contract. For game-specific assimilation, checkpointing, or
-retrieval, also read [references/game-playthrough.md](references/game-playthrough.md).
-For capture groups, relations, state, maps, exhaustive lists, reconciliation,
-or completion, also read [references/state-tracking.md](references/state-tracking.md).
-Before processing or interpreting video, read
-[references/video-processing.md](references/video-processing.md).
-Before visually assimilating screenshots or video frames, connecting recurring
-visual subjects, maintaining glyph/font mappings, or returning visual evidence,
-read [references/visual-library.md](references/visual-library.md).
-Before building, refreshing, querying, validating, or deleting the optional
-FTS5 retrieval cache, read
-[references/local-search-index.md](references/local-search-index.md).
+Treat evidence, questions, corrections, decisions, hypotheses, open items,
+screenshots, videos, and dictated transcripts as deliberate captures. Pure
+initialization, context selection, authorization, archive confirmation, and
+deletion confirmation are control input. Classifying input type is mechanical
+routing; do not interpret subject content before persistence.
 
-The Windows helpers provide optional deterministic mechanics without becoming
-the portable behavioral authority:
-
-- [Initialize-SecondBrain.ps1](scripts/Initialize-SecondBrain.ps1) and
-  [Migrate-SecondBrainHumanLayout.ps1](scripts/Migrate-SecondBrainHumanLayout.ps1)
-  create or safely migrate the human-first layout;
-- [Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1), the two
-  `Complete-SecondBrain*` helpers, and
-  [Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1)
-  own immutable intake, save-first completion, and processing events;
-- [Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1) and
-  [Backfill-SecondBrainVisualLibrary.ps1](scripts/Backfill-SecondBrainVisualLibrary.ps1)
-  prepare local media and its semantic catalog;
-- the `Build`, `Ensure`, and `Search-SecondBrainIndex` helpers own the optional
-  disposable context-isolated search cache;
-- [Add-SecondBrainRelation.ps1](scripts/Add-SecondBrainRelation.ps1),
-  [Test-SecondBrainContext.ps1](scripts/Test-SecondBrainContext.ps1), and
-  [Manage-SecondBrainReconciliationLock.ps1](scripts/Manage-SecondBrainReconciliationLock.ps1)
-  own durable relations, read-only auditing, and serialized reconciliation.
-
-If helpers are unavailable, reproduce the vault contract exactly with safe
-local file tools. Do not introduce a hosted service or authoritative database.
-The optional local FTS5 database is generated, rebuildable, and never a source
-of truth.
-
-## Request user input
-
-Check the conversation and durable control state before asking. Keep one
-question unanswered at a time. Follow the input tool's current instructions
-and schema; do not assume `request_user_input` accepts approvals. Use plain
-text when a required gate cannot use the tool.
-
-For bounded choices, offer two or three mutually exclusive, evidence-grounded
-options, with a supported recommendation first. Never include latent subject
-knowledge, spoilers, or uncaptured claims in a question or option. Allow the
-user's own wording without duplicating a built-in free-form option. Ordinary
-captures, dictated content, and open-ended subject questions remain free-form.
-Do not ask for secrets in a question card or retain them in control records.
-
-A missing context decision, conflict resolution, download authorization, or
-deletion confirmation requires an explicit answer. Silence, elapsed time, and
-preselected options do not resolve a gate. Continue only work independent of
-the pending answer; ambiguous context selection never permits reading siblings.
-
-Apply the answer and continue the authorized operation without another
-acknowledgement or confirmation gate.
-
-Classify the returned answer exactly like any other accepted user input. A
-context, authorization, archive, or deletion selection is control input. A
-selection that resolves a subject-matter ambiguity, corrects a claim, or adds a
-decision is deliberate evidence: persist it as the first action before updating
-interpretations or synthesis.
-
-## Non-negotiable boundaries
-
-- After Codex accepts a deliberate input, persist it as the first agent action
-  before interpretation, organization, or substantive reply.
-- Firsthand-only mode is the default. Do not reveal, confirm, deny, hint at, or
-  steer around facts absent from the active context, even when the model knows
-  them.
-- Do not read or merge a sibling context unless the user explicitly requests
-  that cross-context operation.
-- Original capture files and completed screenshot or video attachments are
-  immutable evidence. Store later observations, machine transcripts,
-  inferences, corrections, and processing changes separately with capture-ID
-  provenance.
-- Never auto-delete evidence. Permanent deletion requires an explicit request,
-  impact preview, confirmation, bounded execution, and reference repair.
-- Do not browse for subject facts or use external knowledge unless the user
-  explicitly requests a scoped override.
-
-## Classify the accepted input
-
-Treat an accepted user message as a deliberate capture when it contains or asks
-about evidence, a correction, a decision, a hypothesis, a question, an open
-item, a screenshot, a video, or a dictated transcript. A pure initialization,
-context-selection, authorization, archive-confirmation, or deletion-confirmation
-command is control input and is not itself subject evidence.
-
-Do not interpret capture content before persisting it. Recognizing its input
-type and whether it is a pure control command is mechanical routing, not
-subject-matter interpretation.
-
-## Capture first
+## Persist accepted input
 
 For every deliberate capture in an initialized vault:
 
-1. Before the first helper call, choose one candidate capture ID in the vault
-   contract format. Also choose one capture-group ID for the complete accepted
-   message. Reuse that group across every attachment, assign attachment order
+1. Before the first helper call, choose a candidate `CAP-YYYYMMDD-HHMMSS-ffff`
+   capture ID and one `GRP-YYYYMMDD-HHMMSS-ffff` group ID for the complete
+   accepted message. Use local time and four random lowercase hexadecimal digits.
+   Reuse that group across every attachment, assign attachment order
    through `-GroupOrdinal`, and pass the known immediately preceding group
    through `-PreviousCaptureGroupId`. As the first agent action, run
    [scripts/Add-SecondBrainCapture.ps1](scripts/Add-SecondBrainCapture.ps1)
-   against the vault root and pass the candidate and group IDs through
+   with `-VaultPath`, `-InputType`, and the complete input in `-Content`.
+   Pass the candidate and group IDs through
    `-CaptureId` and `-CaptureGroupId`. Pass the complete accepted text,
    corrected dictated transcript, or screenshot/video message and caption
    without summarizing it. When the user's own accepted words provide a clear
@@ -147,353 +65,89 @@ helper returns `existing-capture` instead of duplicating evidence. Never assign
 a new ID to the same accepted input merely because tool output was lost.
 
 If compaction obscures the candidate ID, make one bounded search in the active
-context's newest capture directory for the exact unsummarized input and local
-attachment basename. Adopt one exact match. If the search finds none or more
-than one, report the capture as unverified and stop; do not generate another ID
-or interpret the input.
+context's newest capture directory for the exact unsummarized input. For media,
+also verify the retained attachment's identity from available provenance or
+bytes; a matching caption or unavailable original basename is insufficient.
+Adopt one verified match. If identity is unresolved or the search finds none or
+more than one, report the capture as unverified and stop; do not generate
+another ID or interpret the input.
 
-If pending media is later saved locally, run the matching completion helper
-with the original capture ID. Do not rewrite its capture Markdown.
+If pending media is later saved locally, use
+[Complete-SecondBrainScreenshot.ps1](scripts/Complete-SecondBrainScreenshot.ps1)
+or [Complete-SecondBrainVideo.ps1](scripts/Complete-SecondBrainVideo.ps1) with the
+original capture ID. Do not rewrite its capture Markdown.
 
 When the accepted text says "the previous message", "that item", or another
 direct predecessor reference, resolve the durable preceding capture group
-before semantic similarity. Record a supported connection through
+before semantic similarity. Read [state-tracking.md](references/state-tracking.md)
+before recording a supported connection through
 [scripts/Add-SecondBrainRelation.ps1](scripts/Add-SecondBrainRelation.ps1).
 Do not jump to an older similar event when the predecessor group is known.
 
-## Separate fast intake from assimilation
+## Choose the operation
 
-Do not force every log entry through LLM interpretation and multi-file
-reconciliation before returning control. Use two lanes:
+For standalone logging, persistence is the whole operation: leave the latest
+event `pending`, acknowledge the title or ID, selected context, and actual
+attachment state, and return. Do not load or rewrite the notebook, inspect media,
+refresh indexes, or ask non-urgent identity questions. An uncaptioned logged
+video is still fast intake.
 
-- **Fast intake:** a standalone note, screenshot, video, dictated discovery, or
-  burst of entries supplied as records. Persist each accepted message, leave
-  its latest event `pending`, report its short title or capture ID and
-  attachment state, then return. Do not read the guide or journal, inspect
-  media, update state, or ask a non-urgent identity question in this lane.
-- **Assimilation:** interpretation, semantic media description, recurring
-  reference linking, guide/journal updates, checkpointing, or answering a
-  question from the record. Enter this lane when the user asks to process,
-  interpret, organize, checkpoint, recall, compare, or answer, or when an urgent
-  contradiction cannot wait. In an explicitly selected fast-intake mode, an
-  ordinary correction is captured and related immediately but waits for
-  requested assimilation before multi-file synthesis.
+For a question or a request to interpret, organize, recall, compare, checkpoint,
+or process media, capture the request first and continue the requested work in
+the same turn. `pending` is a durable queue, not a capture failure. Do not
+promise background processing after the turn.
 
-`pending` is a durable assimilation queue, not a failed capture. Process it in
-chronological bounded batches and state any remainder truthfully. Do not claim
-background work will continue after the assistant turn. A later fresh task can
-drain the same queue from the append-only ledger.
+Read only the procedure needed for the operation:
 
-For a retrieval or interpretation request, capture the question first and then
-load only the pending evidence and human notes needed to answer it. For a pure
-fast intake, durable persistence is the whole operation; do not run the startup
-hydration sequence afterward.
+| Operation | Procedure | Completion evidence |
+| --- | --- | --- |
+| Initialize, resume, recover context, archive, delete | [lifecycle.md](references/lifecycle.md) | Verified identity, state, and authorized transition |
+| Interpret captured evidence or process media | [process-media.md](references/process-media.md) | Separate observations, inferences, unresolved details, and processing disposition |
+| Organize, correct, checkpoint, end an activity session | [reconcile.md](references/reconcile.md) | Consistent human notes and provenance with exact remaining queue |
+| Answer from the record | [retrieve.md](references/retrieve.md) | Source-verified answer with evidence and stated limits |
 
-### Attached-video routing
+For a fresh non-intake task, use the lifecycle procedure's startup steps before
+subject work. Load the vault contract before manual helper replacement or
+structural changes; normal helper-based intake needs only this entry point.
+Resolve helper paths relative to the installed skill, not the caller's working
+directory. Preserve completed work when the user steers an operation; a status
+question does not cancel the original request.
 
-An attached video logged as an entry follows fast intake. Capture it and state
-that visual/audio assimilation is pending; do not ask an uncaptioned sender an
-extra intent question. When the user asks what the clip shows, requests
-processing, or makes the clip part of a question, capture it first and then
-prepare, interpret, and answer in the same assistant turn.
+## Ask only for a missing decision
 
-For assimilation, a genuine `pending-save-first` attachment still requires the
-user to make the media locally readable. Otherwise the substantive reply must
-contain the interpretation or a truthful technical limitation, not only a
-second capture acknowledgement.
+Keep one question unanswered, check existing decisions, and follow the input
+tool's live contract; use plain language for required gates it cannot carry.
+Required context, conflict, download, or deletion decisions need explicit
+answers. Silence, elapsed time, and preselection are not consent. Continue only
+independent work while waiting.
 
-Preserve completed work when the user steers assimilation, capture new evidence
-first, and continue the revised request. A status question does not cancel it.
-Stop for completed intake, actual blockers, or the bounded rollover rules;
-multiple processing tools alone do not justify an extra confirmation gate.
+Use evidence-grounded options for bounded choices and free-form input for
+captures and open questions. Never leak spoilers or uncaptured facts through a
+question. Keep secrets out of control records. A subject-matter answer is new
+evidence: capture it first. Apply a pure control answer without recapturing it
+as subject evidence or requesting another acknowledgement.
 
-## Keep the Codex task bounded
+## Keep initiative and completion bounded
 
-Treat chat as transport and the vault as memory. Use one Codex task for one
-bounded activity session, not for the lifetime of a collection.
+Interrupt intake only for an urgent contradiction, safety-relevant conflict,
+or explicitly time-sensitive reminder. Defer ordinary connections to the next
+requested checkpoint. In explicit fast-intake mode, capture a correction and
+its supported relation; defer notebook synthesis.
 
-- Read each required skill resource at most once per assistant turn. Context
-  compaction inside that turn does not restart setup. Do not reread complete
-  skill files, enumerate tool catalogs, or repeat completed discovery merely
-  because earlier tool output left the visible context.
-- Treat the first context compaction in a task as a rollover signal. Finish or
-  verify only the already accepted capture, report its capture ID and actual
-  processing state, then tell the user to continue in a fresh task rooted at
-  the same vault. Do not fork the saturated task because a fork retains its
-  completed history. Do not create a replacement task unless the user asks.
-- If persistence is still uncertain after compaction, use the candidate-ID
-  retry or exact-match search above once. If a second context compaction occurs
-  in the same assistant turn, stop all interpretation, reconciliation, media
-  processing, tool discovery, and further retries. Perform at most one minimal
-  candidate-ID existence check, report `captured`, `existing-capture`, or
-  `unverified` truthfully, and return the rollover instruction.
-- Never describe a bridge, shell, or helper as failed unless an actual tool
-  result establishes that failure. Lost working context is not a tool error.
-- During assimilation, run the context auditor. A session-size warning is a
-  proactive rollover signal even when platform compaction has not occurred.
-  Finish or verify the accepted capture and continue in a genuinely fresh task;
-  do not keep a long-lived playthrough task merely because it still responds.
-- If the user submits another deliberate input before following the rollover
-  instruction, capture it first under these same bounds, then repeat the
-  rollover instruction. Never use task saturation to leave an accepted input
-  only in chat.
+Use the lifecycle recovery procedure after compaction. A verified durable
+checkpoint can support continuation after the first compaction; an unverified
+capture, unresolved recovery, repeated compaction in one turn, or auditor
+session-size warning requires the bounded stop or rollover described there.
+Context loss does not reset retry limits.
 
-A fresh task resumes from durable files and minimum recent evidence. It does
-not require the old task, a fork, or a chat summary as authority.
+When the user requests all or remaining items, enumerate trackers and latest
+ledger dispositions; search ranking cannot prove completeness. Before declaring
+a context completed, run the auditor with `-CompletionGate` and require a
+truthful disposition for every capture. Report remaining or conflicted items.
 
-## Start or resume a task
-
-For fast intake, let the capture helper resolve the active context from
-`second-brain.md`; announce the selected collection/context in the brief
-acknowledgement and stop. Do not hydrate the notebook merely to log another
-entry.
-
-For assimilation, retrieval, checkpointing, or a pure control command:
-
-1. Treat the directory containing the governing vault `AGENTS.md` and
-   `second-brain.md` as the vault root.
-2. Read `second-brain.md` and announce the active collection/context before
-   substantive work in a fresh task.
-3. Read the selected context's `README.md`, `open-questions.md`, relevant guide
-   and journal notes, optional `trackers/`, `_evidence/state.md`, processing and
-   relation events, and only the minimum captures needed. Run
-   [scripts/Test-SecondBrainContext.ps1](scripts/Test-SecondBrainContext.ps1)
-   before relying on a pending count or completeness claim. In an unmigrated
-   legacy context, read the old `context.md` and `open-items.md` instead.
-4. Stop for confirmation when no active context exists, multiple contexts
-   plausibly match, or the opening input is a control command indicating
-   another subject. Offer known context names through a permitted input channel
-   without reading their contents. Do not ask again when the user has already
-   selected the context explicitly. Do not read a sibling context while
-   selection is ambiguous.
-5. Resume from durable files. Never treat prior chat as required authority.
-
-## Interpret a capture
-
-Use only the active context and the captured evidence.
-
-- For text or voice, distinguish the user's direct statement, a proposed
-  interpretation, and uncertainty.
-- For a screenshot with durable media, create
-  `_evidence/interpretations/<capture-id>.md` with `Direct observations`,
-  `AI inferences`, and `Unresolved`. Link every inference to its supporting
-  observation and label confidence. Use `inbox/interpretations/` only for an
-  intact unmigrated legacy context.
-- A user caption improves provenance but is not a prerequisite for useful
-  image assimilation. Inspect the durable image itself, record visible objects
-  and text, and search the active `library/` by titles, aliases, stable
-  reference IDs, and prior visual exemplars. Do not make interpretation quality
-  depend entirely on the user's prose.
-- After visual review, create or update
-  `library/captures/<descriptive-slug>--<capture-id>.md` with a natural title,
-  searchable aliases/keywords, an embedded preview, the immutable source link,
-  and stable visual-reference links. Keep the capture-ID file immutable even
-  if this derived descriptor is later renamed or corrected.
-- Reuse one `library/references/<reference-slug>.md` page for recurring visual
-  subjects. Preserve user-confirmed names, positive exemplars, confusable
-  subjects, and visible distinctions. Use provenance-linked glyph crops and
-  confirmed mappings for custom fonts. Never merge two subjects or confirm an
-  OCR glyph from visual similarity alone.
-- If a screenshot contains a map, record a stable map-anchor tracker row with
-  the visible era, label, selected cell or normalized marker position,
-  viewport, landmarks, confidence, and capture provenance even when the caption
-  does not call the position important. Connect the event with `located-at`;
-  same region without a supported cell or landmark match remains a candidate.
-- For a screenshot still pending save-first, do not claim visual evidence is
-  retained. Ask the user to save the image locally and keep the item blocked or
-  pending.
-- For a video with durable media, run
-  [scripts/Process-SecondBrainVideo.ps1](scripts/Process-SecondBrainVideo.ps1)
-  before interpretation. Omit Whisper path arguments when no override is
-  needed; the helper reuses the active vault runtime record, the stable Codex
-  local-tools installation, or `PATH`. Do not substitute a hosted
-  transcription service.
-- Treat source frame rate and review sample rate as separate. The helper's
-  automatic overview is 8 fps for clips up to 30 seconds, 4 fps up to 120
-  seconds, and 2 fps for longer clips before any automatic frame-cap reduction.
-  When the user calls out an fps value because fast information may be lost,
-  treat it as the requested review rate and pass `-FrameSampleFps`; never
-  silently fall back to one frame per second. If existing derivatives use a
-  lower rate, rerun with `-Reprocess`. Report both source and effective sample
-  rates and any remaining temporal gap.
-- Interpret the prepared video using the required separate visual, onscreen
-  text, audible speech, non-speech audio, combined timeline, inference, and
-  unresolved layers in
-  [references/video-processing.md](references/video-processing.md). Treat the
-  offline speech transcript as fallible derived evidence, not as the user's
-  direct statement.
-- Before declaring the local transcription runtime/model unavailable, inspect
-  the durable runtime record and the bounded stable local-tools location. This
-  read-only discovery is ordinary processing and does not require a separate
-  permission turn. A prior vault record that explicitly grants install/use
-  permission remains authorization to reuse or repair that same local runtime
-  and model unless the user revokes it.
-- If installation or repair is already authorized, perform it in a stable
-  local-tools directory, persist or refresh the runtime record, retry media
-  processing, and continue interpretation in the same assistant turn. Do not
-  redownload a working runtime/model or ask again for authorization already
-  recorded in the vault or supplied in the conversation.
-- Only if a video is pending save-first, or contains audio but the local
-  transcription runtime/model remains genuinely unavailable after bounded
-  discovery and any authorized repair, append `blocked` and do not claim
-  complete interpretation. Report the exact checked locations or failed tool
-  action; never describe an unperformed search as a permission problem.
-- Append an `interpreted`, `blocked`, or `conflicted` event through
-  [scripts/Add-SecondBrainProcessingEvent.ps1](scripts/Add-SecondBrainProcessingEvent.ps1).
-- Do not rewrite the immutable capture or completed attachment.
-
-If interpretation exposes a material ambiguity that only the user can resolve,
-ask one concise question. Otherwise acknowledge capture briefly and defer
-non-urgent connections to the next checkpoint.
-
-## Reconcile at checkpoints
-
-Reconcile when the user asks to organize/checkpoint, before answering a query
-that needs current cross-session knowledge, and when the user ends the activity
-session. Outside explicit fast-intake mode, apply explicit corrections and
-material state changes immediately.
-
-1. Acquire the reconciliation lock and audit fresh source bytes. Another live
-   owner blocks shared-note, tracker, state, and index writes.
-2. Read pending/interpreted events, relations, trackers, and minimum supporting
-   captures oldest-first; report any bounded-batch remainder.
-3. Update one canonical guide home, meaningful journal chapter, short home,
-   and only still-useful open questions. Unknown trivia is not automatically a task.
-4. Create media descriptors and connect recurring subjects to canonical visual
-   references when media is interpreted.
-5. Update canonical tracker rows and append supported state relations using the
-   invariants in [references/state-tracking.md](references/state-tracking.md).
-6. Add human-labeled, clickable evidence links, classify conflicts, and append
-   a truthful latest event for every capture in the processed batch. For
-   Obsidian, use vault-relative `[[path|label]]` wikilinks.
-7. Keep `_evidence/state.md` to current metadata and one latest checkpoint;
-   put history in the ledgers or journal.
-8. Audit again, report exact coverage/pending counts, rebuild the search index
-   only after consistency succeeds, and release the owned lock in `finally`.
-
-After the checkpoint files agree, run
-[scripts/Ensure-SecondBrainSearchIndex.ps1](scripts/Ensure-SecondBrainSearchIndex.ps1)
-with `-ForceRebuild` unless the context records search mode `off`. Automatic
-mode uses the configured loopback embedding model when that model is already
-installed. It falls back to lexical FTS5 or ordinary files. Never create or
-refresh an index during fast intake.
-
-Do not create empty guide taxonomies. A checkpoint may legitimately conclude
-that no new guide note is justified. For an intact legacy layout, retain its
-paths until the migration helper is explicitly authorized; do not create a
-partial mix of `inbox` and `_evidence`.
-
-Keep `_evidence/` visibly named as the backend by default. Do not hide it or
-change a client's excluded-file settings unless the user explicitly asks.
-
-## Retrieve and answer
-
-Before cross-session recall, reconcile relevant pending evidence. Search only
-the active context unless a cross-context operation was explicit.
-
-If the request asks for all, every, complete, exhaustive, remaining, pending,
-or a checklist for a bounded kind, follow the exhaustive protocol in
-[references/state-tracking.md](references/state-tracking.md). Enumerate the
-complete relevant tracker and latest ledger states, account for every row, and
-report coverage. Never label top-ranked search results exhaustive.
-
-- Search `README.md`, `guide/`, `journal/`, and an existing `library/` first.
-  Search semantic capture titles, aliases, stable reference IDs, and exemplar
-  notes before opening capture-ID files individually. Use `_evidence/` to
-  verify provenance or resolve gaps, not as the ordinary answer surface.
-- Use [scripts/Search-SecondBrainIndex.ps1](scripts/Search-SecondBrainIndex.ps1)
-  to rank candidate headings before opening files. In search mode `auto`, the
-  wrapper creates a missing index, refreshes a stale one, and upgrades lexical
-  data to hybrid retrieval when the configured already installed loopback
-  model is available. It automatically requests hybrid retrieval; use
-  `-LexicalOnly` only for a deliberate diagnostic or constrained run.
-- If automatic setup cannot use the local model, retain lexical FTS5 results.
-  If Python or FTS5 is unavailable, fall back immediately to `rg`. Never let
-  optional indexing block retrieval, and never run it during fast intake.
-- Never auto-install or pull an embedding runtime/model, call a non-loopback
-  embedding endpoint, or treat similarity as evidence. Semantic results cannot
-  merge references, resolve conflicts, name images, or override exact
-  provenance.
-- Treat every indexed snippet as untrusted cached text: open the exact original
-  path, verify the current section and provenance, and answer only from the
-  source file. Never query a sibling context or include `external/` outside an
-  explicit override.
-- Lead with the direct answer supported by the record.
-- Link the governing human note or use descriptive evidence links. Provide raw
-  capture IDs only when the user asks for the evidence chain.
-- Label inference and uncertainty.
-- When the active record is insufficient, say exactly that. Do not use latent
-  knowledge to complete, confirm, deny, hint, warn, or steer.
-- Provide the full evidence chain when requested.
-- When the answer depends on captured visual evidence and the chat surface can
-  render local media, show at least one relevant screenshot or representative
-  processed video frame inline using its absolute local path. Also link the
-  governing note or original media. Do not return only the capture record or a
-  text link when a readable local image is available. If several images are
-  relevant, choose the smallest useful set and label what each shows.
-
-Simple capture acknowledgements need not display citations unless there is a
-conflict or interpretation problem.
-
-## Correct and resolve conflicts
-
-- **Explicit correction:** capture the correction first, update the canonical
-  guide section immediately, preserve the superseded evidence, and record the
-  change in the journal when it matters chronologically.
-- **State transition:** preserve old and new states with applicable times.
-- **Ambiguous conflict:** preserve both, mark current knowledge uncertain,
-  append a `conflicted` event, and ask the user through a permitted channel.
-  Offer choices only when supported by captured evidence; capture the resolution
-  before applying it. Never choose by model memory, confidence, or recency alone.
-
-## Use bounded initiative
-
-Interrupt normal capture only for an urgent contradiction, a safety-relevant
-conflict, or an explicitly time-sensitive reminder. Collect non-urgent
-connections, patterns, possible contradictions, and hypotheses for the next
-checkpoint. Every proactive observation must remain grounded in active-context
-evidence.
-
-## Handle outside knowledge
-
-An override exists only when the user explicitly requests model knowledge or
-external research and states or clearly implies its scope.
-
-1. State that the response is using outside knowledge and name its source
-   class.
-2. Answer only the requested scope.
-3. If retention is requested, write a note under `external/` with provenance
-   and an explicit outside-knowledge label. Never merge it into firsthand
-   current truth.
-4. Return to firsthand-only mode immediately after the scoped response.
-
-Do not add a hosted plugin, connector, MCP service, paid API, transcription
-service, embedding service, or hosted database.
-
-## End, archive, or delete
-
-At session end, reconcile, write the checkpoint, and report unresolved,
-conflicted, or pending items.
-
-Before marking a context completed, run
-[scripts/Test-SecondBrainContext.ps1](scripts/Test-SecondBrainContext.ps1) with
-`-CompletionGate`. Every capture must have a truthful latest disposition.
-Append `scope-closed` when the user explicitly declines processing or closes an
-item; a later duplicate or summary does not silently close the original
-capture. Do not claim completion or zero pending when the audit disagrees.
-
-Archive only by changing lifecycle to `archived`; preserve evidence.
-
-For permanent deletion, follow the impact-preview and confirmation procedure in
-the vault contract. The initial request authorizes preview only. Do not delete
-until a later unambiguous confirmation names the previewed scope. Use
-the host's permitted approval channel, or plain text, for that later
-confirm-or-cancel gate. Repair dangling references in the same bounded operation
-and report partial failure.
-
-## Validate behavior
-
-Use [references/validation-scenarios.md](references/validation-scenarios.md)
-for source cold-read and activated-vault validation. Scenario success is
-evidence of behavior, not proof that latent knowledge has been technically
-removed.
+User instructions govern within host permissions. A writing or cooperation
+skill may shape communication but cannot substitute outside subject facts for
+evidence. If a rule requires stopping, finish independent authorized work,
+link this skill, quote the rule, and state what was saved and what remains.
+Use [validation-scenarios.md](references/validation-scenarios.md) for isolated
+behavioral checks; passing scenarios does not prove latent knowledge was removed.

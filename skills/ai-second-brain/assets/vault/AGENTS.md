@@ -111,10 +111,17 @@ Treat the directory containing this file as the vault root.
 - When a chat answer relies on an available screenshot or processed video
   frame, render a relevant image inline as well as linking the note or source.
 
-At the start of a fresh task, read `second-brain.md`, announce the active
-collection/context, and stop for clarification when selection is ambiguous.
-Read only the minimum active-context human notes and `_evidence` records needed
-for the current action.
+For fast intake, let the capture helper resolve the active context and name it
+in the acknowledgement; do not hydrate the notebook. For other fresh-task work,
+read `second-brain.md`, announce the active collection/context, and resolve an
+ambiguous selection before reading subject material or writing a capture.
+Read only the minimum active-context records needed for the current action.
+
+After compaction, follow the installed skill's bounded lifecycle recovery
+procedure. A verified durable checkpoint can support continuation after the
+first compaction. Unresolved persistence or recovery, a second compaction in
+one turn, or a session-size audit warning requires the defined stop or rollover.
+Context loss never resets capture retry limits or permits duplicate evidence.
 
 Before marking a context completed, run the auditor with its completion gate.
 Every accepted capture must be reconciled, conflicted, blocked with a truthful

@@ -13,7 +13,7 @@ choices without also judging framework-specific code.
 The first eight candidates are deliberately distinct rather than ranked from
 best to worst. Candidate 9 combines the three styles that transfer most reliably
 to general chat. Candidate 9 was selected and implemented as the explicit-only
-[`controlled-writing-style`](../../skills/controlled-writing-style/SKILL.md)
+[`clear-conversation`](../../skills/clear-conversation/SKILL.md)
 skill.
 
 ## Comparison set
@@ -88,8 +88,8 @@ combination produces a better general chat voice than any one candidate alone.
 ## Selected implementation
 
 The canonical skill package is
-[`skills/controlled-writing-style/`](../../skills/controlled-writing-style/SKILL.md).
-Invoke it as `$controlled-writing-style`. It applies only after explicit
+[`skills/clear-conversation/`](../../skills/clear-conversation/SKILL.md).
+Invoke it as `$clear-conversation`. It applies only after explicit
 invocation and does not install or activate automatically from this catalog
 checkout.
 

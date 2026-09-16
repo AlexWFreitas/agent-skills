@@ -28,7 +28,7 @@ schema. This is a host compatibility choice, not an Astra API requirement.
 | `phased-plan-to-goal` | Reuse valid authorization, prepare reviewable drafts before requesting missing approval, incorporate steering, and bound repeated testing. | Phase scope, execution modes, contract amendments, and consequential-action authority remain explicit. |
 | `start-coop-session` | Reuse a fully specified startup contract and explicit resume/closure instructions; own routine editorial work. | The user retains substantive decisions and the requested participation cadence. |
 | `ai-second-brain` | Reuse context/runtime decisions, respect current input-tool permissions, and continue requested assimilation after steering. | Capture-first evidence, firsthand-only defaults, context isolation, deletion preview, bounded retries, and compaction rollover remain intact. |
-| `controlled-writing-style` | Clarify prose precedence, prefer connected paragraphs, reduce stock phrasing, and keep style review brief. | Explicit invocation, conversation duration, factual fidelity, and requested output formats remain intact. |
+| `controlled-writing-style` (now [clear-conversation](../skills/clear-conversation/SKILL.md)) | Clarify prose precedence, prefer connected paragraphs, reduce stock phrasing, and keep style review brief. | Explicit invocation, conversation duration, factual fidelity, and requested output formats remain intact. |
 | `technical-writing` | Finish scoped edits, use known editorial defaults, verify changed claims proportionately, and keep handoffs concise. | Technical truth, source checking, review-only mode, and authorized publication boundaries remain intact. |
 
 The vault instruction asset and input-validation scenario track the revised
