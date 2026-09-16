@@ -198,19 +198,24 @@ Pass:
 
 Exercise one ambiguous context selection, one subject-matter conflict, one
 open-ended capture, and one deletion preview in a disposable fixture while
-`request_user_input` is available.
+a user-input tool is available. Repeat with a host that permits only optional
+clarification in that tool and with no user-input tool.
 
 Pass:
 
-- bounded context and deletion gates use two or three mutually exclusive,
-  evidence-grounded choices with no auto-resolution;
+- bounded context and deletion gates use evidence-grounded choices through a
+  channel permitted by the host; deletion approval never uses a tool that
+  disallows approvals, and no gate auto-resolves;
 - the conflict choices contain no latent facts or spoilers, and the selected
   resolution is captured before synthesis changes;
 - the open-ended capture remains plain text rather than being forced into
   predefined options;
 - the built-in free-form alternative is not duplicated as an `Other` option;
 - the same behavior remains possible through plain text when the tool is
-  unavailable.
+  unavailable or does not permit that question type;
+- an explicit context selection or still-valid runtime authorization is reused
+  without a second confirmation, while deletion still requires its separate
+  confirmation after the impact preview.
 
 ## V19 — Context-compaction rollover
 

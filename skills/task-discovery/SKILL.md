@@ -8,6 +8,13 @@ description: Run an explicit, read-only discovery phase that challenges a propos
 Treat discovery as a bounded phase: investigate and challenge the task first,
 then hand off a clear implementation brief. Do not execute the defined task.
 
+The user's explicit instructions govern this workflow within the host's
+permissions. Use the defaults below where the user has left room; do not turn
+an example, template, or suggested technique into an additional requirement.
+If a skill rule actually blocks requested work, link this `SKILL.md`, quote the
+rule, and explain the specific unresolved boundary after doing the authorized
+work that does not depend on it.
+
 ## Phase contract
 
 - Keep at most one discovery question unanswered. After the answer, preserve and
@@ -21,7 +28,7 @@ then hand off a clear implementation brief. Do not execute the defined task.
   scenarios unless the request explicitly requires that depth.
 - Challenge vague claims, contradictions, risky assumptions, and premature
   conclusions. Do not make the final handoff a transcript of that exploration.
-- Write only inside `docs/discovery/<task-name>/` during discovery. Treat
+- Write only inside the selected discovery directory during discovery. Treat
   project files and external systems as read-only.
 - Maintain `discovery-record.md` and `task-definition.md` from the beginning.
 - Write in the request language. Preserve technical identifiers and proper names
@@ -31,30 +38,22 @@ then hand off a clear implementation brief. Do not execute the defined task.
 
 ## Request user input
 
-When Codex exposes `request_user_input`, use it for one bounded discovery
-question whose answer fits two or three mutually exclusive choices, such as
-confirming the proposed task name, resuming versus creating a distinct
-directory, choosing between already-defined alternatives, or confirming early
-closure. Send exactly one question per call, but make sequential calls in the
-same continuing assistant turn as each answer returns and clears the prior
-question.
+Ask only after applying the decision-ownership rules below. Keep one question
+unanswered at a time, and continue independent read-only research while waiting.
+Prefer an available user-input tool only when its current instructions permit
+that question type. Follow its live schema rather than assuming fixed fields
+or that `request_user_input` accepts approval requests. Use plain text when a
+required question cannot use the available tool.
 
-Put the evidence-backed recommendation first and suffix its label with
-`(Recommended)`. Use a single-sentence prompt, a header of at most 12
-characters, labels of one to five words, and a one-sentence impact description
-for each choice. Do not add an `Other` option because Codex supplies the
-free-form alternative. Honor a free-form response as the user's answer.
+For a bounded choice, offer two or three mutually exclusive options and put an
+evidence-backed recommendation first. Leave room for the user's own wording;
+do not force exploratory answers into choices or duplicate a built-in free-form
+option. Do not request secrets in question cards or discovery records.
 
-Do not use predefined choices for exploratory questions, missing task facts,
-long-form rationale, credentials, secrets, or any answer that needs the user's
-own wording. Ask those questions in concise plain text. If the tool is
-unavailable, ask the same bounded question in plain text.
-
-Omit `autoResolutionMs`. A discovery question blocks only work that depends on
-its unanswered result: do not select a default, create dependent artifacts, or
-advance that gate without an explicit answer. Once the answer returns, process
-it and continue without requesting a separate acknowledgement. Tool
-presentation never changes the authority or evidence required by this skill.
+An optional preference may use a stated reversible default if unanswered. A
+user-owned blocker needs an explicit answer before dependent work proceeds;
+silence, a preselected option, and elapsed time do not resolve it. Apply an
+answer immediately without requesting a separate acknowledgement.
 
 Never end after an answer with only a recap, the next unresolved point, or a
 promise to ask the next question on a later turn. A concise transition may
@@ -77,12 +76,15 @@ implicit answer.
 
 ## Start or resume
 
-1. Infer a concise lowercase kebab-case name, propose it, and obtain
-   confirmation before creating files.
-2. Use `docs/discovery/<task-name>/` by default. If it already exists, ask
-   whether to resume it or create a distinct directory.
-3. Create the two primary documents from the bundled templates. Set
-   `in-progress` status and ISO 8601 timestamps with a UTC offset.
+1. Use the user's task name or infer a concise lowercase kebab-case name.
+   Naming alone does not require confirmation.
+2. Use the user's explicit destination or `docs/discovery/<task-name>/` by
+   default. Resume an existing directory when its task identity clearly
+   matches. Ask only when ownership or task identity is ambiguous; do not
+   overwrite unrelated work.
+3. For a new discovery, create the two primary documents from the bundled
+   templates. Set `in-progress` status and ISO 8601 timestamps with a UTC
+   offset. On resume, retain the existing documents and follow step 5.
 4. Put substantial research, extracts, diagrams, and examples in supporting
    files within the same discovery directory, then link them from the record.
 5. On resume, read the current state, canonical trail, task definition, and the
@@ -206,6 +208,13 @@ evidence class (`verified`, `inference`, `assumption`, or `unresolved`), and
 any relevant freshness, conflict, or access limitation. Do not copy secrets or
 unnecessary sensitive content.
 
+Treat a new user message as steering for the current discovery unless it
+explicitly replaces or ends the task. Answer side questions briefly, preserve
+settled decisions, and continue the active discovery. Validate the final
+handoff once against the readiness checklist; repeat only affected checks when
+new evidence or revisions warrant it. Discovery does not require running the
+defined implementation's test suite.
+
 ## Artifact contracts
 
 ### Task definition: the primary handoff
@@ -322,9 +331,9 @@ When ready:
    behavior, or required manual action. State that discovery has ended and
    wait.
 
-For an early user-requested closure, run the review, explain material gaps, ask
-one confirmation question using `request_user_input` when available, then mark
-both documents `incomplete` if confirmed.
+For an explicit early-closure request, run the review, explain material gaps,
+record the user's instruction, and mark both documents `incomplete`. Ask only
+if the user has not clearly chosen between pausing and closing.
 
 For a later explicit invocation that materially changes a completed definition,
 reopen the same directory, preserve snapshots, add a resumed-session trail

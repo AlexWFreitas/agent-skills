@@ -9,35 +9,34 @@ Treat the session as shared work. Contribute analysis and perform agreed
 mechanical work, but keep the user involved in substantive understanding and
 decisions. Do not collapse the session into a one-shot answer.
 
+The user's explicit instructions take precedence over this workflow's
+defaults, within the host's permissions. Preserve the requested level of
+participation: perform settled mechanical work without extra approval, and
+keep substantive decisions with the user unless delegated. If a skill rule
+requires a pause, link this `SKILL.md`, quote the rule, and explain the exact
+missing decision after completing independent authorized preparation.
+
 ## Request user input
 
-When Codex exposes `request_user_input`, use it for one bounded question with
-two or three mutually exclusive choices, especially startup-contract
-confirmation, source-scope approval, resume confirmation, a choice between
-settled alternatives, and session closure. Send exactly one question per call,
-but continue the same active assistant turn when the answer returns. One
-question at a time means at most one unanswered question, not one question per
-assistant turn.
+Keep at most one question unanswered, not one question per assistant turn.
+Use an available user-input tool when its current instructions permit the
+question type, following its live schema. Do not assume `request_user_input`
+accepts approvals. Use plain text for required gates the tool cannot carry or
+for open-ended discussion better expressed in the user's own words. Keep
+secrets out of question cards and the session record.
 
-Put the evidence-backed recommendation first and suffix its label with
-`(Recommended)`. Use a single-sentence prompt, a header of at most 12
-characters, labels of one to five words, and a one-sentence effect description
-for each choice. Do not add an `Other` option because Codex supplies the
-free-form alternative. Treat a free-form response as the user's answer and
-preserve its meaning in `session.md` when material.
-
-Use concise plain text instead when the user needs to explain, draft, supply
-facts, provide credentials or secrets, perform an action, or answer outside a
-bounded choice. If the tool is unavailable, ask the same bounded question in
-plain text.
-
-Omit `autoResolutionMs` for every session gate. Confirmation, approval,
-closure, and other material decisions require an explicit answer; tool
-presentation never expands authority.
+For a bounded decision, offer two or three mutually exclusive choices with an
+evidence-backed recommendation first and describe each choice's effect. Do not
+duplicate a built-in free-form option. Preserve material answers in `session.md`.
+An optional preference may use a stated reversible default; startup approval,
+source expansion, substantive decisions, and closure need an explicit answer.
+Silence, elapsed time, and a preselected option are not consent. While waiting,
+continue only preparation that does not depend on the answer or bypass the
+user's requested participation.
 
 After an answer, apply it and continue the work it unlocks immediately. If the
 next focused question is already known after the relevant explanation or work,
-ask it in the same response or a sequential `request_user_input` call. Do not
+ask it through the permitted input channel. Do not
 stop at a summary of the answer, promise to ask the known question next turn, or
 require a separate "ok" to proceed.
 
@@ -65,9 +64,10 @@ choice and later treat selection as authority for both.
    - session-record and working-copy locations;
    - completion criteria;
    - initial route.
-4. Ask one focused question requesting confirmation of the complete contract,
-   using `request_user_input` when available with confirm and revise choices.
-   Do not begin substantive work or create artifacts before confirmation.
+4. If the user's request already explicitly settles the complete contract,
+   record it and proceed. Otherwise ask one focused question confirming the
+   proposed contract through a permitted channel before substantive work or
+   artifact creation. A chosen directory name alone is not a separate gate.
 5. After confirmation, create `docs/coop/<session-name>/` by default. Copy
    [assets/session-template.md](assets/session-template.md) to `session.md`,
    create clearly named working copies when needed, and populate the confirmed
@@ -93,10 +93,11 @@ to expand scope. Keep supplied and external evidence distinguishable.
   recommend an option when evidence supports one.
 - Distinguish evidence, inference, assumption, recommendation, and unresolved
   uncertainty whenever conflating them could affect the outcome.
-- Let the user redirect the route, change the desired depth, revisit covered
-  material, or revise a tentative answer. Reconfirm the startup contract when a
-  change materially affects its goal, scope, output, authority, or completion
-  criteria.
+- Let the user redirect the route, change depth, revisit material, or revise an
+  answer. Record explicit contract changes without asking the user to repeat
+  them. Ask only when a material goal, scope, output, authority, or completion
+  boundary remains unresolved. Answer side questions, then return to the
+  current shared activity unless the user pauses or replaces it.
 - If the user questions relevance or depth, expresses frustration, rejects
   added machinery, or repeatedly needs low-level alternatives explained, pause
   the current route and reassess it against the confirmed goal and completion
@@ -116,8 +117,9 @@ substance with the user while performing the mechanical edits yourself.
 - Treat a clearly settled answer or decision as authority to update only the
   working-copy content it directly settles, then report the change briefly.
 - Do not convert tentative discussion into artifact content.
-- Ask separately when wording remains ambiguous, an edit is destructive, or
-  materially different formulations remain viable.
+- Ask when unresolved meaning would change the settled decision, or a
+  destructive edit needs authorization. Choose ordinary phrasing and formatting
+  yourself within the agreed meaning.
 - Preserve supplied originals and edit a clearly named working copy by default.
   Edit an original in place only after explicit instruction.
 - Do not treat skill invocation or contract confirmation as authority for
@@ -184,11 +186,10 @@ When an invocation identifies an existing session:
 2. Read `session.md`, inspect the current source and working artifacts, and
    reconcile drift.
 3. Summarize the current state and proposed next action.
-4. Ask one focused question confirming continuation before substantive work,
-   using `request_user_input` when available with continue and revise-contract
-   choices.
-5. Resolve any conflict affecting goal, scope, output, authority, or completion
-   criteria through that confirmation rather than silently merging it.
+4. Treat an explicit request to resume or continue as continuation approval
+   when the contract still applies. Do not ask for a second confirmation.
+5. Ask one focused question only if drift or the request leaves a material
+   conflict affecting goal, scope, output, authority, or completion criteria.
 
 When drift exists, record both the current artifact state and the fact that it
 changed since the prior checkpoint. Do not describe a drifted artifact as
@@ -198,10 +199,11 @@ unchanged merely because the agent itself did not edit it.
 
 Propose successful closure only after checking the startup contract's
 completion criteria, reconciling `session.md` with current artifacts, and
-summarizing completed work, final outputs, and unresolved limitations. Ask one
-focused question for explicit closure confirmation, using `request_user_input`
-when available with complete and keep-active choices. Keep the session `active`
-unless the user confirms; then set it to `completed`.
+summarizing completed work, final outputs, and unresolved limitations. Use an
+existing explicit closure instruction when it covers this result; otherwise
+ask one focused question through a permitted channel. Keep the session `active`
+unless the user confirms; then set it to `completed`. Repeat successful checks
+only if artifacts changed or a remaining concern warrants another check.
 
 If the user explicitly ends early, set the state to `abandoned`. Preserve the
 progress, outputs, limitations, unmet criteria, and safe next step. Never present

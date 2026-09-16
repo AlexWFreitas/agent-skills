@@ -10,6 +10,11 @@ deliberate inputs before interpreting them, use only the active context, and
 default to acting as though no outside subject knowledge is available. Keep the
 human notebook readable without sacrificing the separate evidence trail.
 
+The user's explicit instructions govern within the host's permissions. Reuse
+context choices and local-runtime authorization that still apply. If a skill
+rule requires stopping, link this `SKILL.md`, quote the rule, and report the
+unmet condition and durably completed work.
+
 ## Required resources
 
 Read [references/vault-contract.md](references/vault-contract.md) before
@@ -56,34 +61,25 @@ of truth.
 
 ## Request user input
 
-When Codex exposes `request_user_input`, use it only for one bounded question
-with two or three mutually exclusive choices, such as selecting among plausible
-active contexts, resolving alternatives already supported by captured evidence,
-approving a local dependency download, confirming archive, or confirming
-deletion after the required impact preview. Send exactly one question per call.
-When the answer returns, perform the required capture-or-control routing and
-continue the unlocked operation in the same active assistant turn.
+Check the conversation and durable control state before asking. Keep one
+question unanswered at a time. Follow the input tool's current instructions
+and schema; do not assume `request_user_input` accepts approvals. Use plain
+text when a required gate cannot use the tool.
 
-Put the evidence-backed recommendation first and suffix its label with
-`(Recommended)`. Use a single-sentence prompt, a header of at most 12
-characters, labels of one to five words, and a one-sentence effect description
-for each choice. Do not add an `Other` option because Codex supplies the
-free-form alternative. Never put latent subject knowledge, spoilers, or an
-uncaptured claim into a question, label, description, or recommendation.
+For bounded choices, offer two or three mutually exclusive, evidence-grounded
+options, with a supported recommendation first. Never include latent subject
+knowledge, spoilers, or uncaptured claims in a question or option. Allow the
+user's own wording without duplicating a built-in free-form option. Ordinary
+captures, dictated content, and open-ended subject questions remain free-form.
+Do not ask for secrets in a question card or retain them in control records.
 
-Do not use predefined choices for ordinary captures, open-ended subject
-questions, dictated content, media-save instructions, credentials, secrets, or
-answers that require the user's own words. Use concise plain text instead. If
-the tool is unavailable, ask the same bounded question in plain text.
+A missing context decision, conflict resolution, download authorization, or
+deletion confirmation requires an explicit answer. Silence, elapsed time, and
+preselected options do not resolve a gate. Continue only work independent of
+the pending answer; ambiguous context selection never permits reading siblings.
 
-Omit `autoResolutionMs`. Context selection, conflict resolution, downloads,
-archive, deletion, and every other vault gate require explicit user input. Tool
-presentation never changes firsthand-only boundaries or authorization.
-
-Do not stop after the answer with only an acknowledgement or summary, and do
-not require a separate "ok" to proceed. Continue context loading, conflict
-resolution, an approved download, archive, or confirmed deletion as far as the
-answer safely authorizes.
+Apply the answer and continue the authorized operation without another
+acknowledgement or confirmation gate.
 
 Classify the returned answer exactly like any other accepted user input. A
 context, authorization, archive, or deletion selection is control input. A
@@ -206,6 +202,11 @@ user to make the media locally readable. Otherwise the substantive reply must
 contain the interpretation or a truthful technical limitation, not only a
 second capture acknowledgement.
 
+Preserve completed work when the user steers assimilation, capture new evidence
+first, and continue the revised request. A status question does not cancel it.
+Stop for completed intake, actual blockers, or the bounded rollover rules;
+multiple processing tools alone do not justify an extra confirmation gate.
+
 ## Keep the Codex task bounded
 
 Treat chat as transport and the vault as memory. Use one Codex task for one
@@ -261,10 +262,10 @@ For assimilation, retrieval, checkpointing, or a pure control command:
    legacy context, read the old `context.md` and `open-items.md` instead.
 4. Stop for confirmation when no active context exists, multiple contexts
    plausibly match, or the opening input is a control command indicating
-   another subject. When two or three known contexts plausibly match, use
-   `request_user_input` if available without reading their contents. Otherwise
-   ask in plain text. Do not read a sibling context while selection is
-   ambiguous.
+   another subject. Offer known context names through a permitted input channel
+   without reading their contents. Do not ask again when the user has already
+   selected the context explicitly. Do not read a sibling context while
+   selection is ambiguous.
 5. Resume from durable files. Never treat prior chat as required authority.
 
 ## Interpret a capture
@@ -441,10 +442,9 @@ conflict or interpretation problem.
   change in the journal when it matters chronologically.
 - **State transition:** preserve old and new states with applicable times.
 - **Ambiguous conflict:** preserve both, mark current knowledge uncertain,
-  append a `conflicted` event, and ask the user. Use `request_user_input` when
-  two or three evidence-grounded resolutions are bounded; capture the returned
-  resolution before applying it. Never pick a winner from model memory,
-  confidence, or recency alone.
+  append a `conflicted` event, and ask the user through a permitted channel.
+  Offer choices only when supported by captured evidence; capture the resolution
+  before applying it. Never choose by model memory, confidence, or recency alone.
 
 ## Use bounded initiative
 
@@ -487,8 +487,8 @@ Archive only by changing lifecycle to `archived`; preserve evidence.
 For permanent deletion, follow the impact-preview and confirmation procedure in
 the vault contract. The initial request authorizes preview only. Do not delete
 until a later unambiguous confirmation names the previewed scope. Use
-`request_user_input` when available for that later confirm-or-cancel gate, with
-no auto-resolution. Repair dangling references in the same bounded operation
+the host's permitted approval channel, or plain text, for that later
+confirm-or-cancel gate. Repair dangling references in the same bounded operation
 and report partial failure.
 
 ## Validate behavior

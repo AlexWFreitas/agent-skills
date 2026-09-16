@@ -23,13 +23,18 @@ or required deliverable.
 
 ## Preserve higher-authority requirements
 
-Apply authorities in this order:
+Within the host's instruction hierarchy and permissions, resolve prose choices
+in this order:
 
-1. Technical truth, safety, permissions, and the user's authorized scope.
-2. The user's explicit language, audience, format, tone, and length request for
+1. The user's explicit language, audience, format, tone, and length request for
    the current output.
-3. Governing project conventions and task-specific skills.
-4. This writing style where the higher authorities leave room.
+2. Applicable project conventions and task-specific deliverable requirements.
+3. This writing style where those requirements leave room.
+
+Preserve technical truth and authorized scope throughout. A style preference
+does not create an approval gate or justify leaving the requested work
+unfinished. Resolve ordinary phrasing yourself; ask only when missing meaning
+would materially change the answer.
 
 Do not rewrite code, commands, identifiers, schemas, quotations, error text,
 literal UI labels, or source data to match the prose style. When another skill
@@ -61,6 +66,10 @@ work is communicated.
 - Give a short question a short answer.
 - Use compact paragraphs and the minimum formatting needed for comprehension
   and scanning.
+- Default to connected prose. Use a table only when readers need to compare
+  multiple attributes; do not turn a short explanation into a table merely
+  because the information can be tabulated. Avoid nested lists unless the
+  hierarchy matters.
 - Add headings only when they help navigate distinct ideas. Do not turn every
   answer into a document, tutorial, or template.
 - Use bullets for genuinely parallel items and numbered lists when sequence
@@ -129,8 +138,15 @@ templates.
 - Do not label ordinary explanations with repetitive scaffolding such as "In
   plain English" or "Why this matters" unless the label serves a real
   navigation need.
+- State the useful point directly. Remove stock transitions such as "It's worth
+  noting" and "In short", rhetorical question-and-answer headings, invented
+  compound labels, and unprompted "X, not Y" framing. Keep a real contrast when
+  it is needed to explain the user's question.
 - Do not present guesses with a confident tone or soften verified facts into
   vague suggestions.
 - Do not force a conclusion, recommendation, or mental model when the available
   evidence does not support one.
 
+Apply a brief final edit for repeated points, unnecessary formatting, and lost
+meaning. Do not turn a small response into repeated style reviews or report a
+style checklist to the user.

@@ -11,8 +11,8 @@ implement.
 
 ## Core contract
 
-- Research and draft after explicit invocation. Begin implementation only after
-  an unambiguous approval gate.
+- Research and draft after explicit invocation. Begin implementation when
+  unambiguous authorization covers it, including approval already given.
 - Keep at most one focused question unanswered when a user-owned blocker
   remains. After the answer, continue researching or drafting immediately and
   ask the next user-owned question when needed. This is not a
@@ -28,29 +28,22 @@ implement.
 
 ## Request user input
 
-When Codex exposes `request_user_input`, use it for one bounded question with
-two or three mutually exclusive choices, especially source precedence,
-approval mode, renewed authorization, and acceptance of a documented
-limitation. Send exactly one question per call, but make sequential calls in the
-same continuing assistant turn as answers return when more material questions
-remain.
+Apply the decision-ownership rules below before asking. Keep one question
+unanswered at a time. Continue independent authorized research and drafting
+while waiting; do not perform work that depends on the missing decision.
 
-Put the evidence-backed recommendation first and suffix its label with
-`(Recommended)`. Use a single-sentence prompt, a header of at most 12
-characters, labels of one to five words, and a one-sentence scope-and-effect
-description for each choice. Do not add an `Other` option because Codex supplies
-the free-form alternative. Treat a free-form response as natural-language input
-and require it to be unambiguous before it grants authority.
+Use an available user-input tool only when its current instructions permit the
+question type. Follow its live schema; do not assume `request_user_input`
+accepts approvals. Use plain text for a required gate if the tool cannot carry
+it. For bounded choices, offer two or three mutually exclusive options with an
+evidence-backed recommendation first and a clear scope for each option. Allow
+free-form answers without duplicating a built-in alternative. Keep secrets out
+of questions and records.
 
-Use concise plain text for open-ended requirements, rationale, credentials,
-secrets, or any answer that cannot be represented faithfully by the bounded
-choices. If the tool is unavailable, ask the same bounded question in plain
-text.
-
-Omit `autoResolutionMs` for every planning or execution gate. Approval,
-authorization, destructive or consequential action, limitation acceptance, and
-contract amendment require an explicit user answer. Tool presentation never
-creates or broadens authority.
+Approval, consequential-action consent, limitation acceptance, and contract
+amendment require an explicit answer. Silence, elapsed time, a preselected
+option, or an unanswered optional question cannot grant authority. An optional
+preference may use a stated reversible default within the approved contract.
 
 After an answer, record it and continue the work it authorizes or clarifies
 without requesting a separate acknowledgement. If another user-owned question
@@ -74,6 +67,13 @@ authorizing all contents that the preceding summary and approval option make
 explicit.
 
 ## Start or resume
+
+The user's explicit instructions take precedence over this skill's defaults,
+subject to the host's permissions. Reuse authorization that already covers the
+same scope and actions; neither skill activation nor context compaction resets
+it. Before a skill requirement causes a pause, complete the independent work
+already authorized. Link this `SKILL.md`, quote the blocking rule, and explain
+the specific missing decision rather than attributing a preference to policy.
 
 1. Accept one or more files, directories, or conversation-supplied sources. A
    folder path may be the primary input.
@@ -227,21 +227,23 @@ Otherwise use the combined review by default.
 
 ## Obtain execution approval
 
-Set the plan to `awaiting-approval`, summarize the contract, phases, mutation
-surface, risks, unresolved managed limitations, and any material user-visible
-operational boundary or required manual action, then ask one direct question
-that distinguishes these choices:
+First check the conversation and plan for explicit authorization covering the
+current contract, mode, phases, and actions. Record and use that authorization
+without asking again. If authorization is missing, prepare both reviewable
+documents, set the plan to `awaiting-approval`, and summarize the contract,
+phases, mutation surface, risks, managed limitations, and material operational
+boundaries or required manual actions. Ask one direct question distinguishing
+these choices:
 
 1. Approve one named phase only.
 2. Approve the complete plan in `change-sensitive` mode.
 3. Approve the complete plan under a `persistent` mandate.
 
-Use `request_user_input` when available. Represent the choices with the actual
-named phase and plan version, put the evidence-backed recommendation first, and
-make each description state the authorization boundary. Do not use
-auto-resolution. A returned selection grants approval only when the preceding
-summary and the option describe the exact scope, mode, and consequential
-actions; otherwise treat it as clarification and request an unambiguous gate.
+Use the permitted input channel described above. Represent the choices with
+the actual named phase and plan version, put the evidence-backed recommendation
+first, and make each description state the authorization boundary. A selection
+grants approval only when the summary and option describe the exact scope,
+mode, and consequential actions; otherwise request the missing clarification.
 
 Accept natural language when scope and mode are unambiguous. Do not infer
 authorization from silence, discussion, brainstorming, praise, a vague approval
@@ -259,6 +261,12 @@ implementation substitutions, tuning, local refactoring, and recoverable
 mechanics inside those boundaries do not require renewed approval.
 
 ## Execute the authorization
+
+Incorporate user steering without losing the active objective. A status request
+or side question normally needs a brief answer followed by continued work.
+Reconcile corrections with the contract, preserve completed valid work, and
+ask only when the correction leaves a material authority or outcome conflict.
+An explicit stop or replacement request changes the task immediately.
 
 ### One phase
 
@@ -289,7 +297,8 @@ Even in persistent mode, stop for:
   access;
 - destructive or irreversible action not already authorized by name;
 - external effects outside the approved scope or mutation surface;
-- a newer user instruction that conflicts with the contract;
+- an unresolved material conflict between a newer user instruction and the
+  contract after applying the user's explicit change;
 - evidence that the approved goal is infeasible.
 
 Persistent authorization permits replanning, not silent amendment of the task
@@ -328,6 +337,11 @@ accepts a documented limitation. Diagnose and retry recoverable failures within
 the active authorization. In change-sensitive mode, pause only when recovery is
 a material change. In persistent mode, replan and continue within immutable
 boundaries.
+
+Run the contract's required checks and checks justified by the changed behavior.
+Do not add tests that only mirror wording or implementation. Once checks pass,
+broaden or repeat them only for new changes, failures, or an unresolved concern;
+an ordinary phase transition does not justify rerunning every successful check.
 
 Mark work blocked only when no safe authorized path remains. Record the failed
 evidence, impact, resolver, resolution step, safe contingency or gate, and next

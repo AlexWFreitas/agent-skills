@@ -10,6 +10,12 @@ to use. Apply Google developer documentation style without overriding the
 reader's needs, the requested deliverable, project conventions, or technical
 truth.
 
+Follow the user's explicit request within the host's permissions. Use this
+skill to finish the requested draft, edit, or review without introducing a new
+approval flow. If a specific skill requirement prevents completion, link this
+`SKILL.md`, quote it, and explain the missing evidence or authority after doing
+the independent work already authorized.
+
 ## Preserve authority and truth
 
 Treat technical fidelity as an invariant. Do not change commands, code,
@@ -72,6 +78,11 @@ material before imposing a new structure. Preserve useful established patterns
 unless they conflict with a higher authority or prevent the document from
 working for its readers.
 
+For a narrow edit, inspect only the surrounding text and sources needed to
+preserve meaning. Use known audience and project defaults for reversible
+editorial choices. A later correction changes the relevant portion of the
+active assignment; a side question does not discard the deliverable in progress.
+
 ## Draft and revise
 
 Use the smallest workflow that fits the task:
@@ -88,6 +99,11 @@ Use the smallest workflow that fits the task:
 
 For a small wording edit, apply the same principles without forcing a full
 document redesign.
+
+Match verification to the change. Run required project documentation checks
+and verify changed technical claims against their sources. A prose-only edit
+does not require product tests or executing documented commands. Repeat checks
+only when further edits, failures, or a concrete unresolved concern justify it.
 
 ## Default writing contract
 
@@ -126,6 +142,10 @@ Unless a higher authority says otherwise:
 - Keep paragraphs focused on one idea, put the most important point first, and
   split walls of text. Prefer short sentences; treat 26 words as a review
   signal, not a mechanical limit.
+- Build explanations with connected paragraphs. Use lists and tables when they
+  make actual steps, parallel items, or comparisons easier to follow. Remove
+  stock transitions, repeated conclusions, and invented labels; retain precise
+  domain terminology the intended reader needs.
 
 ## Organize for scanning and action
 
@@ -176,9 +196,10 @@ content.
 ### Edit files
 
 Preserve unrelated work, local formatting conventions, anchors, and generated
-boundaries. Change only the documentation in scope. Do not run examples,
-publish, commit, or alter external systems unless the user separately
-authorizes those actions.
+boundaries. Change only the documentation in scope. Running examples,
+publishing, committing, and altering external systems require authorization
+covering those actions. Reuse explicit authorization already given instead of
+requiring a separate confirmation turn.
 
 ### Review
 
@@ -190,7 +211,7 @@ not verified.
 
 ## Finish transparently
 
-For substantial work, report:
+For substantial work, give a concise handoff covering the applicable items:
 
 - What was drafted, changed, or reviewed.
 - Which technical sources, project conventions, and style references governed
@@ -202,3 +223,7 @@ For substantial work, report:
 
 Do not claim that a document is correct, accessible, runnable, or fully style
 compliant beyond the checks actually performed.
+
+For a small edit, return the revised text or a short description and file link.
+Do not reproduce the review checklist or list every style reference unless the
+user requests that detail.

@@ -45,17 +45,19 @@ Optional skill resources include `scripts/`, `references/`, `assets/`, and produ
 ### Codex user-input gates
 
 `request_user_input` is an optional Codex interaction layer, not a portable
-Agent Skills requirement. When a skill needs a user decision, instruct Codex to
-use it when available for one bounded question with two or three mutually
-exclusive choices, especially confirmations, approvals, and clearly defined
-preferences. Keep a plain-language fallback so the skill remains usable in
-other clients.
+Agent Skills requirement. Follow the host's current tool instructions and
+schema: availability does not mean a tool accepts every question type. In
+particular, do not route permission or approval requests through a tool that
+allows only optional clarification. Use a permitted approval channel or plain
+text for required gates. Keep a plain-language fallback for other clients.
 
 Do not force open-ended discovery, narrative answers, credentials, secrets, or
 artifact content into predefined choices. Put an evidence-backed recommendation
-first, let Codex supply the built-in free-form alternative, and never set an
-auto-resolution timeout for a blocking gate, authorization, destructive action,
-or other decision that requires an explicit user answer.
+first and let the host supply its built-in free-form alternative. Required
+gates need explicit answers; silence, elapsed time, and preselected options are
+not consent. An optional unanswered preference can use a stated reversible
+default within the existing scope. Do not turn routine naming, formatting, or
+implementation choices into approval gates.
 
 Keep each bounded question scoped to one decision. An option may explain its
 material consequences, but do not embed a separate unconfirmed foundational
@@ -64,12 +66,11 @@ approval is valid only when the compound artifact or scope is itself the named
 decision and the preceding summary and option make its contents explicit.
 
 Interpret "one question at a time" as at most one unanswered question, never as
-one question per assistant turn. After `request_user_input` returns, process the
-answer and continue the same active turn. If another material question is ready,
-ask it immediately in a new call. Do not insert a summary-only turn, announce
-that the next question will come later, or require the user to reply "ok" merely
-to continue. The same rule applies after a plain-text answer: the next assistant
-response should include the next question when one is already known.
+one question per assistant turn. With asynchronous questions, continue only
+independent authorized work while waiting. When the answer arrives, process it
+and continue. If another material question is ready, ask it through a permitted
+channel. Do not insert a summary-only turn or require the user to reply "ok"
+merely to continue.
 
 Before asking, check the visible conversation and the workflow's durable record
 for an answer to the same decision in substance, not only identical wording.
@@ -83,6 +84,22 @@ loop to make the user select ordinary algorithms, tuning values, reversible
 implementation mechanics, or speculative future safeguards. If the user
 questions relevance or depth, reassess the remaining questions before asking
 another one.
+
+### Model-aware instruction maintenance
+
+Keep the portable skills independent of model IDs, API parameters, and assumed
+tool schemas. Model-specific tuning belongs in the instructions that affect
+observable behavior: clear outcomes, user-owned decisions, valid authorization,
+proportionate checks, and the requested writing style. Preserve each skill's
+activation policy and operational invariants.
+
+User instructions take precedence over skill defaults within the host's
+instruction hierarchy and permissions. A skill that causes a pause must make
+the blocking instruction and its applicability explicit; do not create an
+approval requirement from a recommendation or repeat an approval already given.
+
+The [Astra skill review](docs/astra-skill-review.md) records the official
+guidance, catalog changes, and validation limits for the September 2026 update.
 
 ## Validate changes
 

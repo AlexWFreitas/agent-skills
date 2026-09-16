@@ -74,12 +74,13 @@ quality by file count, line count, or heading count.
   every conceivable failure.
 - Remaining unknowns are implementer-owned, non-material, or have an impact,
   resolver, resolution step, and safe contingency or gate.
-- The direct approval question distinguishes one named phase, complete-plan
-  change-sensitive, and complete-plan persistent authorization. When
-  `request_user_input` is available, it presents those three bounded choices,
-  identifies an evidence-backed recommendation, names the exact scope, and has
-  no auto-resolution timeout. Its preceding summary makes any material
-  user-visible operational boundary or required manual action salient.
+- Existing explicit authorization was checked before requesting approval again.
+  If approval is missing, the question distinguishes one named phase,
+  complete-plan change-sensitive, and complete-plan persistent authorization.
+  It uses a channel permitted by the host, identifies an evidence-backed
+  recommendation, names the exact scope, and requires an explicit answer. Its
+  preceding summary makes material operational boundaries and manual actions
+  salient. An optional unanswered question never grants approval.
 
 ## Before starting or changing a phase
 
@@ -95,6 +96,8 @@ quality by file count, line count, or heading count.
 ## After a phase or failed check
 
 - Required checks have evidence; an attempted change is not labeled complete.
+- Checks cover the approved contract and changed behavior. Repeated or broader
+  testing has a concrete reason, not merely a new phase or an available tool.
 - Recoverable failures were diagnosed within authority.
 - A failed or blocked phase records evidence, impact, resolver, next action,
   and safe contingency.
