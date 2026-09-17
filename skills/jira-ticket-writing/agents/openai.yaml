@@ -1,0 +1,5 @@
+interface:
+  display_name: "Jira Ticket Writing"
+  short_description: "Write Jira descriptions developers and QA can use"
+policy:
+  allow_implicit_invocation: true
