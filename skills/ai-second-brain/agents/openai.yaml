@@ -1,7 +1,0 @@
-interface:
-  display_name: "AI Second Brain"
-  short_description: "Build a readable notebook with grounded media evidence"
-  default_prompt: "Use $ai-second-brain to capture, interpret, and organize this evidence in my active local context: [information or media]."
-
-policy:
-  allow_implicit_invocation: false

@@ -26,7 +26,7 @@ try {
         exit 0
     }
     if (-not $Name -and -not $All) { throw 'Select at least one skill with -Name, or select the full catalog with -All.' }
-    $selectedNames = if ($All) { $catalogNames } else { @($Name) }
+    $selectedNames = @(if ($All) { $catalogNames } else { $Name })
 
     if ($RepositoryPath) {
         $resolvedRepository = Get-NormalizedPath $RepositoryPath

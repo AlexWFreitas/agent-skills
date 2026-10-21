@@ -247,7 +247,9 @@ function Test-RepositoryLayout {
     if (Test-Path -LiteralPath (Join-Path $root '.agents\skills')) { [void]$errors.Add('The canonical catalog must not be mirrored into repository .agents/skills.') }
     $catalog = Join-Path $root 'skills'
     if (Test-Path -LiteralPath $catalog -PathType Container) {
-        foreach ($file in @(Get-ChildItem -LiteralPath $catalog -File -Force)) { [void]$errors.Add("Only skill directories are allowed directly under skills/: $($file.Name)") }
+        foreach ($file in @(Get-ChildItem -LiteralPath $catalog -File -Force)) {
+            if ($file.Name -cne '.gitkeep') { [void]$errors.Add("Only skill directories and the .gitkeep placeholder are allowed directly under skills/: $($file.Name)") }
+        }
         foreach ($skillName in @(Get-CatalogSkillNames $catalog)) {
             $result = Test-SkillDirectory (Join-Path $catalog $skillName)
             foreach ($errorText in $result.Errors) { [void]$errors.Add("${skillName}: $errorText") }

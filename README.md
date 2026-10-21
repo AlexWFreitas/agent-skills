@@ -2,6 +2,12 @@
 
 Private source catalog for Agent Skills maintained primarily with Codex. The skill format follows the portable [Agent Skills specification](https://agentskills.io/specification); Codex-specific metadata and installation paths are optional layers on top of that core.
 
+The catalog is currently empty. All seven previously authored skills were
+removed on October 21, 2026. `skills/.gitkeep` preserves the catalog directory
+in Git. Existing documents under `docs/` are historical records of earlier
+skills and repository work. Removing catalog sources does not uninstall copies
+from other locations.
+
 ## Repository layout
 
 | Path | Purpose |
@@ -11,7 +17,7 @@ Private source catalog for Agent Skills maintained primarily with Codex. The ski
 | `tests/` | Isolated installer and validator tests plus fixtures. |
 | `Refresh-CodexSkills.ps1` | Refresh the full catalog into Codex and Gemini user scopes. |
 | `.github/workflows/validate.yml` | Run the same local checks in Windows PowerShell and PowerShell 7. |
-| `docs/discovery/` | Approved task definitions and discovery evidence. |
+| `docs/` | Historical discovery, design, implementation, and validation records. |
 
 Installed copies are disposable derived output. Never maintain a skill in `$HOME\.agents\skills`, another repository's `.agents\skills`, or a custom destination and then expect those edits to flow back into this catalog.
 
@@ -103,17 +109,11 @@ guidance, catalog changes, and validation limits for the September 2026 update.
 
 ### Workflow design and composition
 
-The [catalog redesign](docs/skill-redesign.md) describes the current skill
-boundaries and its validation evidence. Keep each installed skill self-contained:
+The [catalog redesign](docs/skill-redesign.md) records the former skill
+boundaries and their validation evidence. Keep each installed skill self-contained:
 essential behavior belongs in its entry point, and substantial operation-specific
 detail belongs in explicitly routed references. Repository authoring guidance
 must not become a runtime dependency on this checkout.
-
-Discovery owns the implementation brief; phased execution references its exact
-governing version and owns the operational plan. Cooperation owns user
-participation and session progress. Technical writing governs document quality,
-and Clear Conversation governs compatible prose choices. Compose those roles
-without duplicate contracts, approval loops, or competing status records.
 
 Descriptions distinguish asking to use a workflow from discussing or reviewing
 the skill itself. Preserve existing activation policies. Validate packaging and
@@ -145,10 +145,15 @@ List catalog skills without writing a destination:
 .\scripts\Install-Skills.ps1 -List
 ```
 
+An empty catalog lists no skills. Installation and refresh require at least one
+catalog skill; `-All` and the convenience refresh fail without changing a
+destination while the catalog is empty. The examples below use `example-skill`,
+which must first be authored under `skills/`.
+
 Install or refresh named skills in Codex user scope, `$HOME\.agents\skills`:
 
 ```powershell
-.\scripts\Install-Skills.ps1 -Name task-discovery
+.\scripts\Install-Skills.ps1 -Name example-skill
 ```
 
 Refresh the complete catalog in both Codex user scope (`$HOME\.agents\skills`)
@@ -167,7 +172,7 @@ The general installer also supports an explicit full-catalog selection:
 Install selected skills for another repository:
 
 ```powershell
-.\scripts\Install-Skills.ps1 -Name task-discovery -RepositoryPath D:\Work\another-repository
+.\scripts\Install-Skills.ps1 -Name example-skill -RepositoryPath D:\Work\another-repository
 ```
 
 This resolves `D:\Work\another-repository\.agents\skills`. The target must be an existing external Git repository; this catalog repository is rejected.
@@ -175,7 +180,7 @@ This resolves `D:\Work\another-repository\.agents\skills`. The target must be an
 Use a caller-owned destination for another specification-compatible client:
 
 ```powershell
-.\scripts\Install-Skills.ps1 -Name task-discovery -DestinationPath C:\AgentData\skills
+.\scripts\Install-Skills.ps1 -Name example-skill -DestinationPath C:\AgentData\skills
 ```
 
 A custom path is only a copy destination. It does not claim that another product automatically discovers that location.

@@ -34,7 +34,6 @@ try {
     [void](New-Item -ItemType Directory -Path $script:TemporaryRoot -Force)
     . (Join-Path $PSScriptRoot 'Test-RepositoryValidator.ps1')
     . (Join-Path $PSScriptRoot 'Test-Installer.ps1')
-    . (Join-Path $PSScriptRoot 'Test-AiSecondBrain.ps1')
 }
 finally {
     if (Test-Path -LiteralPath $script:TemporaryRoot) { Remove-Item -LiteralPath $script:TemporaryRoot -Recurse -Force }

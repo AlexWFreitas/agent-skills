@@ -11,6 +11,15 @@ function New-TestCatalog {
     $catalog
 }
 
+function New-TestInstallerRepository {
+    param([string]$Root)
+    [void](New-TestCatalog $Root)
+    [void](New-Item -ItemType Directory -Path (Join-Path $Root '.git') -Force)
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'scripts') -Destination (Join-Path $Root 'scripts') -Recurse
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot 'Refresh-CodexSkills.ps1') -Destination (Join-Path $Root 'Refresh-CodexSkills.ps1')
+    $Root
+}
+
 Invoke-Test 'named refresh replaces stale files and preserves parent and sibling' {
     $caseRoot = Join-Path $script:TemporaryRoot 'named-refresh'
     $catalog = New-TestCatalog $caseRoot
@@ -72,38 +81,43 @@ Invoke-Test 'source reparse points are rejected before staging' {
 }
 
 Invoke-Test 'general installer supports list and explicit destination from unrelated cwd' {
+    $installerRepository = New-TestInstallerRepository (Join-Path $script:TemporaryRoot 'public-installer')
+    $installer = Join-Path $installerRepository 'scripts\Install-Skills.ps1'
     $destination = Join-Path $script:TemporaryRoot 'public-destination'
     Push-Location $script:TemporaryRoot
     try {
-        $listed = @(& (Join-Path $repositoryRoot 'scripts\Install-Skills.ps1') -List)
+        $listed = @(& $installer -List)
         Assert-Equal 0 $LASTEXITCODE 'List failed.'
-        Assert-True ($listed -contains 'task-discovery') 'Catalog skill was not listed.'
-        & (Join-Path $repositoryRoot 'scripts\Install-Skills.ps1') -Name task-discovery -DestinationPath $destination *> $null
+        Assert-True ($listed -contains 'minimal-skill') 'Catalog skill was not listed.'
+        & $installer -Name minimal-skill -DestinationPath $destination *> $null
         Assert-Equal 0 $LASTEXITCODE 'Explicit destination install failed.'
-        Assert-True (Test-Path -LiteralPath (Join-Path $destination 'task-discovery\SKILL.md')) 'Selected skill was not installed.'
+        Assert-True (Test-Path -LiteralPath (Join-Path $destination 'minimal-skill\SKILL.md')) 'Selected skill was not installed.'
     }
     finally { Pop-Location }
 }
 
 Invoke-Test 'repository destination requires an external Git checkout' {
+    $installerRepository = New-TestInstallerRepository (Join-Path $script:TemporaryRoot 'repository-installer')
     $external = Join-Path $script:TemporaryRoot 'external-repository'
     [void](New-Item -ItemType Directory -Path (Join-Path $external '.git') -Force)
-    & (Join-Path $repositoryRoot 'scripts\Install-Skills.ps1') -Name task-discovery -RepositoryPath $external *> $null
+    & (Join-Path $installerRepository 'scripts\Install-Skills.ps1') -Name minimal-skill -RepositoryPath $external *> $null
     Assert-Equal 0 $LASTEXITCODE 'External repository install failed.'
-    Assert-True (Test-Path -LiteralPath (Join-Path $external '.agents\skills\task-discovery\SKILL.md')) 'Repository destination was not resolved.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $external '.agents\skills\minimal-skill\SKILL.md')) 'Repository destination was not resolved.'
 }
 
 Invoke-Test 'public installer rejects conflicts, overlap, and catalog repository scope' {
-    $installer = Join-Path $repositoryRoot 'scripts\Install-Skills.ps1'
-    & $installer -Name task-discovery -All -DestinationPath (Join-Path $script:TemporaryRoot 'conflict') *> $null
+    $installerRepository = New-TestInstallerRepository (Join-Path $script:TemporaryRoot 'rejected-installer')
+    $installer = Join-Path $installerRepository 'scripts\Install-Skills.ps1'
+    & $installer -Name minimal-skill -All -DestinationPath (Join-Path $script:TemporaryRoot 'conflict') *> $null
     Assert-True ($LASTEXITCODE -ne 0) 'Conflicting selection unexpectedly succeeded.'
-    & $installer -Name task-discovery -DestinationPath (Join-Path $repositoryRoot 'skills\nested') *> $null
+    & $installer -Name minimal-skill -DestinationPath (Join-Path $installerRepository 'skills\nested') *> $null
     Assert-True ($LASTEXITCODE -ne 0) 'Catalog-overlapping destination unexpectedly succeeded.'
-    & $installer -Name task-discovery -RepositoryPath $repositoryRoot *> $null
+    & $installer -Name minimal-skill -RepositoryPath $installerRepository *> $null
     Assert-True ($LASTEXITCODE -ne 0) 'Catalog repository scope unexpectedly succeeded.'
 }
 
 Invoke-Test 'refresh convenience entry point uses isolated HOME and refreshes all for Codex and Gemini' {
+    $installerRepository = New-TestInstallerRepository (Join-Path $script:TemporaryRoot 'convenience-installer')
     $isolatedHome = Join-Path $script:TemporaryRoot 'isolated-home'
     [void](New-Item -ItemType Directory -Path $isolatedHome -Force)
     $oldHome = $env:HOME
@@ -114,12 +128,38 @@ Invoke-Test 'refresh convenience entry point uses isolated HOME and refreshes al
         $powerShellExecutable = (Get-Process -Id $PID).Path
         Push-Location $script:TemporaryRoot
         try {
-            & $powerShellExecutable -NoLogo -NoProfile -File (Join-Path $repositoryRoot 'Refresh-CodexSkills.ps1') *> $null
+            & $powerShellExecutable -NoLogo -NoProfile -File (Join-Path $installerRepository 'Refresh-CodexSkills.ps1') *> $null
             Assert-Equal 0 $LASTEXITCODE 'Convenience refresh failed.'
         }
         finally { Pop-Location }
-        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.agents\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Codex destination under isolated HOME.'
-        Assert-True (Test-Path -LiteralPath (Join-Path $isolatedHome '.gemini\config\skills\task-discovery\SKILL.md')) 'Convenience refresh did not populate the Gemini destination under isolated HOME.'
+        foreach ($destination in @('.agents\skills', '.gemini\config\skills')) {
+            foreach ($name in @('minimal-skill', 'extended-skill')) {
+                Assert-True (Test-Path -LiteralPath (Join-Path (Join-Path $isolatedHome $destination) "$name\SKILL.md")) "Convenience refresh did not populate $name in $destination under isolated HOME."
+            }
+        }
     }
     finally { $env:HOME = $oldHome; $env:USERPROFILE = $oldUserProfile }
+}
+
+Invoke-Test 'empty catalog lists nothing and bulk install preserves existing destination' {
+    $installerRepository = New-TestInstallerRepository (Join-Path $script:TemporaryRoot 'empty-installer')
+    $catalogRoot = Join-Path $installerRepository 'skills'
+    foreach ($name in @('minimal-skill', 'extended-skill')) {
+        $source = Get-NormalizedPath (Join-Path $catalogRoot $name)
+        Assert-True (Test-StrictChildPath $script:TemporaryRoot $source) 'Fixture cleanup escaped the temporary root.'
+        Remove-Item -LiteralPath $source -Recurse -Force
+    }
+    [System.IO.File]::WriteAllText((Join-Path $catalogRoot '.gitkeep'), '')
+    $installer = Join-Path $installerRepository 'scripts\Install-Skills.ps1'
+    $listed = @(& $installer -List)
+    Assert-Equal 0 $LASTEXITCODE 'Empty catalog list failed.'
+    Assert-Equal 0 $listed.Count 'Empty catalog listed a skill.'
+    $destination = Join-Path $script:TemporaryRoot 'empty-catalog-destination'
+    [void](New-Item -ItemType Directory -Path $destination -Force)
+    $sentinel = Join-Path $destination 'keep.txt'
+    Set-Content -LiteralPath $sentinel -Value 'preserve'
+    & $installer -All -DestinationPath $destination *> $null
+    Assert-True ($LASTEXITCODE -ne 0) 'Empty bulk install unexpectedly succeeded.'
+    Assert-Equal 'preserve' (Get-Content -LiteralPath $sentinel) 'Existing destination content changed.'
+    Assert-Equal 1 @(Get-ChildItem -LiteralPath $destination -Force).Count 'Empty bulk install wrote destination artifacts.'
 }

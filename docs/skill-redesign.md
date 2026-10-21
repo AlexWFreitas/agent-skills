@@ -1,5 +1,8 @@
 # Skill catalog redesign
 
+Historical record: the skills described here were removed from the catalog on
+October 21, 2026. Earlier validation results apply to that earlier source tree.
+
 This redesign implements the September 16, 2026 request to rebuild all six
 skills around clearer responsibilities, focused entry instructions, and simpler
 handoffs. It changes the canonical catalog only. Installed skills and existing
@@ -57,7 +60,7 @@ the portable frontmatter profile are preserved. Descriptions clarify that
 discussing a skill does not activate its workflow.
 
 After the redesign, the user renamed `controlled-writing-style` to
-[`clear-conversation`](../skills/clear-conversation/SKILL.md), displayed as
+`clear-conversation`, displayed as
 Clear Conversation and invoked as `$clear-conversation`. Its behavior and
 explicit-only activation are unchanged. The rename applies to the canonical
 catalog; installed copies are not refreshed by this change.

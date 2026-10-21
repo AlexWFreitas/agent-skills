@@ -1,8 +1,9 @@
 # Jira ticket writing validation
 
-Validated locally on September 17, 2026. This record covers the new
-[skill](../../../skills/jira-ticket-writing/SKILL.md) and its
-[examples](../../../skills/jira-ticket-writing/references/examples.md).
+Historical record: the skill was removed from the catalog on October 21, 2026.
+
+Validated locally on September 17, 2026. This record covers the former
+`skills/jira-ticket-writing/SKILL.md` and its `references/examples.md`.
 
 ## Semantic review
 

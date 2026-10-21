@@ -1,5 +1,8 @@
 # Writing-style comparison for a future chat skill
 
+Historical comparison: the selected skill was removed from the catalog on
+October 21, 2026. The samples remain available for reference.
+
 This comparison pack contains eight pure writing styles and one controlled
 hybrid answering the same request:
 
@@ -13,8 +16,7 @@ choices without also judging framework-specific code.
 The first eight candidates are deliberately distinct rather than ranked from
 best to worst. Candidate 9 combines the three styles that transfer most reliably
 to general chat. Candidate 9 was selected and implemented as the explicit-only
-[`clear-conversation`](../../skills/clear-conversation/SKILL.md)
-skill.
+`clear-conversation` skill, which has since been removed.
 
 ## Comparison set
 
@@ -87,11 +89,9 @@ combination produces a better general chat voice than any one candidate alone.
 
 ## Selected implementation
 
-The canonical skill package is
-[`skills/clear-conversation/`](../../skills/clear-conversation/SKILL.md).
-Invoke it as `$clear-conversation`. It applies only after explicit
-invocation and does not install or activate automatically from this catalog
-checkout.
+The former canonical package was `skills/clear-conversation/`, invoked as
+`$clear-conversation`. It required explicit invocation. The package is no
+longer part of this catalog; its source remains in Git history.
 
 ## Scientific sources
 
